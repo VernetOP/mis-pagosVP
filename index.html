@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mis Pagos VernetO Psicodrama</title>
+<meta name="description" content="Mis Pagos — Escuela de Sociopsicodrama de las Américas · VernetO Psicodrama®">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f5d55">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f4f1ec;--ink:#1f2b2a;--muted:#62706e;--card:#fffdf9;--line:#e2ddd4;--accent:#2f5d55;--soft:#e4efec;
+    --ok:#2f7a55;--okbg:#e5f3ea;--bad:#b23a3a;--badbg:#fbe8e6;--warn:#8f5a0c;--warnbg:#fdf1dc;--grey:#eceae5}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+  body{min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+  header{padding:18px 18px 4px;text-align:center}
+  .school{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .brand{font-family:Fraunces,serif;font-size:15px;color:var(--accent);margin-top:4px;font-weight:500}
+  .brand sup{font-size:.65em}
+  h1{font-family:Fraunces,serif;font-weight:700;font-size:32px;margin:6px 0 0}
+  .tag{color:var(--muted);font-size:15px;margin-top:4px}
+  main{max-width:640px;margin:0 auto;padding:10px 14px 40px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+  .card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+  .tabs{display:flex;gap:6px;background:var(--grey);border-radius:12px;padding:4px;margin:6px 0 12px}
+  .tabs button{flex:1;background:transparent;color:var(--ink);font-weight:600;padding:10px 6px;border-radius:9px}
+  .tabs button.on{background:var(--accent);color:#fff}
+  button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:13px 16px;font-weight:700;font-size:16px}
+  button:active{transform:scale(.98)}
+  .btn{background:var(--accent);color:#fff;width:100%;margin-top:14px}
+  .btn.sec{background:var(--grey);color:var(--ink)}
+  .btn.warn{background:var(--warn)}
+  .aviso{border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:15px;line-height:1.45}
+  .aviso.bad{background:var(--badbg);color:#7a2424} .aviso.warn{background:var(--warnbg);color:#5e3b05} .aviso.ok{background:var(--okbg);color:#1d4d35}
+  .big{font-family:Fraunces,serif;font-size:34px;font-weight:700;line-height:1.1}
+  .big.bad{color:var(--bad)} .big.ok{color:var(--ok)}
+  .muted{color:var(--muted)} .small{font-size:13px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .row:first-of-type{border-top:0}
+  .row .l{min-width:0} .row .r{text-align:right;white-space:nowrap}
+  .chip{display:inline-block;font-size:13px;font-weight:700;border-radius:999px;padding:4px 10px;white-space:nowrap}
+  .c-ok{background:var(--okbg);color:var(--ok)} .c-bad{background:var(--badbg);color:var(--bad)} .c-warn{background:var(--warnbg);color:var(--warn)} .c-grey{background:var(--grey);color:var(--muted)}
+  .promo{background:var(--grey);color:var(--muted);border-radius:10px;padding:8px 10px;font-size:13px;margin-top:8px}
+  .promo s{opacity:.8}
+  label{display:block;font-weight:600;font-size:14px;margin:12px 0 6px;color:var(--muted)}
+  input,select,textarea{width:100%;font:inherit;font-size:16px;padding:12px;border:1px solid #d4cdc2;border-radius:10px;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:2px solid #b7d3cc;border-color:var(--accent)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .two>div{min-width:0}
+  .pick{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+  .pick:first-child{border-top:0}
+  .pick input[type=checkbox]{width:24px;height:24px;flex:none;accent-color:var(--accent)}
+  .pick .d{flex:1;min-width:0}
+  .pick .m{width:120px;flex:none}
+  .pick .m input{padding:8px;text-align:right}
+  .total{display:flex;justify-content:space-between;font-weight:700;font-size:18px;margin-top:12px;padding-top:10px;border-top:2px solid var(--line)}
+  details summary{cursor:pointer;font-weight:700;padding:4px 0}
+  .terms{white-space:pre-line;line-height:1.55;font-size:15px;margin-top:8px}
+  .terms p{margin:0 0 10px}
+  .oculto{display:none!important}
+  .cargando{opacity:.5;pointer-events:none}
+  .vacio{text-align:center;color:var(--muted);padding:30px 10px}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:10px 14px 24px}
+  #instalar{position:sticky;bottom:10px;margin:0 auto;display:block;max-width:612px;width:calc(100% - 28px);box-shadow:0 6px 20px rgba(0,0,0,.15)}
+</style>
+</head>
+<body>
+<header>
+  <div class="school">Escuela de Sociopsicodrama de las Américas</div>
+  <div class="brand">VernetO Psicodrama<sup>®</sup></div>
+  <h1>Mis Pagos</h1>
+  <div class="tag" id="saludo"></div>
+</header>
+<main>
+  <div id="tabs" class="tabs oculto"></div>
+  <div id="vista"><div class="vacio">Cargando tu información…</div></div>
+</main>
+<button id="instalar" class="btn oculto">Instalar app</button>
+<footer>Los pagos que registras quedan pendientes hasta que el Lic. Vernet los confirma.</footer>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
