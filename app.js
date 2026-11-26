@@ -1,4 +1,4 @@
-/* Mis Pagos VernetO Psicodrama — app de cada persona */
+/* MisPagosVP — app de cada persona */
 (function () {
   'use strict';
   var API = window.MP_API;
@@ -70,6 +70,16 @@
   }
   function vistaSes(r) {
     var h = '', mon = r.moneda;
+    if (r.proxima) {
+      var p0 = r.proxima;
+      h += '<div class="prox"><h2>Tu próxima ' + (r.sistema === 'SUP' ? 'supervisión' : 'sesión') + '</h2><div class="dia">' + esc(r.proximaLarga.charAt(0).toUpperCase() + r.proximaLarga.slice(1)) + '</div>' +
+        '<div class="hora">' + esc(r.proximaHora) + ' h <span style="font-weight:400;font-size:15px">(hora de Buenos Aires) · 50 minutos</span></div>' +
+        '<div class="det">' + (p0.resta > 0 ? 'Valor ' + esc(p0.valorTxt) + ' · abonar antes del ' + esc(menosUnDia(p0.fecha)) + ' (24 horas antes)' : 'Ya está paga. ¡Gracias!') +
+        (p0.enRevision > 0 ? ' · pago en revisión' : '') + '</div></div>';
+    } else {
+      h += '<div class="prox"><h2>Tu próxima ' + (r.sistema === 'SUP' ? 'supervisión' : 'sesión') + '</h2><div class="hora">Todavía no hay una próxima sesión confirmada.</div></div>';
+    }
+    h += tarjetaAvisos(r);
     if (r.impagas) {
       h += '<div class="aviso bad"><b>Tienes ' + r.impagas + (r.impagas > 1 ? ' sesiones impagas' : ' sesión impaga') + '.</b>' +
         (r.sinRegistrar && r.sinRegistrar < r.impagas ? ' ' + r.sinRegistrar + ' sin pago registrado.' : (r.sinRegistrar ? ' Aún no registraste el pago.' : ' Ya registraste el pago: está en revisión.')) + '</div>';
@@ -79,11 +89,6 @@
       (r.saldo > 0 ? 'Debes ' + esc(r.saldoTxt) : r.saldo < 0 ? 'A favor ' + esc(r.saldoTxt) : 'Al día') + '</div>' +
       (r.valorSesionTxt ? '<div class="muted" style="margin-top:6px">Valor de tu sesión: <b>' + esc(r.valorSesionTxt) + '</b></div>' : '') +
       (r.credito > 0 ? '<div class="aviso ok" style="margin:10px 0 0">Tienes <b>' + esc(r.creditoTxt) + '</b> a favor. Puedes usarlo para pagar una sesión: elige "Saldo a favor" como medio de pago.</div>' : '') + '</div>';
-    if (r.proxima) {
-      var p = r.proxima;
-      h += '<div class="card"><h2>Sesión en curso</h2><div class="row"><div class="l"><b>' + esc(p.fechaTxt) + '</b> · ' + esc(p.hora) + ' h<br><span class="small muted">' +
-        (p.resta > 0 ? 'Abonar antes del ' + esc(menosUnDia(p.fecha)) + ' (24 horas antes)' : 'Ya está paga') + '</span></div><div class="r">' + esc(p.valorTxt) + '<br>' + chipSes(p, mon) + '</div></div></div>';
-    }
     h += '<div class="card"><h2>' + (r.impagas ? 'Desde la sesión impaga más antigua (' + esc(r.desdeTxt) + ')' : 'Últimas sesiones') + '</h2>';
     if (!r.sesiones.length) h += '<div class="vacio">No hay sesiones en este período.</div>';
     r.sesiones.slice().reverse().forEach(function (s) {
@@ -92,6 +97,7 @@
         '</div><div class="r">' + (s.valor ? esc(s.valorTxt) : '—') + '<br>' + chipSes(s, mon) + '</div></div>';
     });
     h += '</div>';
+    h += datosPago(r);
     var pagables = r.sesiones.filter(function (s) { return s.disponible > 0.005; });
     if (r.proxima && r.proxima.disponible > 0.005) pagables.push(r.proxima);
     h += '<div class="card" id="form"><h2>Registrar un pago</h2>';
@@ -112,7 +118,7 @@
 
   // ---------- Estudiantes ESA.VP
   function vistaEsa(r) {
-    var h = '', c = r.mesActual, mon = r.moneda;
+    var h = tarjetaAvisos(r), c = r.mesActual, mon = r.moneda;
     if (r.deudas.length || r.matricula > 0 || r.saldoAnterior > 0) h += '<div class="aviso bad"><b>Tienes cuotas o cargos adeudados.</b> Revisa el detalle abajo.</div>';
     if (r.enRevision > 0) h += '<div class="aviso warn">Pagos en revisión: <b>' + esc(r.enRevisionTxt) + '</b>. Se descuentan cuando la escuela los confirma.</div>';
     if (c) {
@@ -136,6 +142,7 @@
     if (r.matricula > 0) h += '<div class="row"><div class="l"><b>Matrícula</b></div><div class="r"><b>' + esc(r.matriculaTxt) + '</b></div></div>';
     if (r.saldoAnterior > 0) h += '<div class="row"><div class="l"><b>Saldo anterior</b></div><div class="r"><b>' + esc(r.saldoAnteriorTxt) + '</b></div></div>';
     h += '<div class="total"><span>Monto a pagar hoy</span><span' + (r.montoAPagar > 0 ? ' style="color:var(--bad)"' : '') + '>' + esc(r.montoAPagarTxt) + '</span></div></div>';
+    h += datosPago(r);
     h += '<div class="card" id="form"><h2>Registrar un pago</h2>';
     if (!r.opciones.length) h += '<div class="vacio">No tienes cuotas pendientes de pago.</div>';
     else {
@@ -145,6 +152,62 @@
     }
     h += '</div>' + terminos(r) + revisiones(r);
     return h;
+  }
+
+  // ---------- datos para pagar
+  function datosPago(r) {
+    if (!r.datosPago || !r.datosPago.length) return '';
+    return '<div class="card"><h2>Datos para pagar</h2>' + r.datosPago.map(function (d, i) {
+      return '<div class="cuenta"><div style="min-width:0"><b>' + esc(d.medio || d.banco) + '</b>' + (d.moneda && !/^todas$/i.test(d.moneda) ? ' <span class="small muted">' + esc(d.moneda) + '</span>' : '') +
+        (d.titular ? '<br><span class="small muted">Titular: ' + esc(d.titular) + '</span>' : '') + (d.banco && d.medio ? '<br><span class="small muted">' + esc(d.banco) + '</span>' : '') +
+        (d.cuenta ? '<br><span class="num">' + esc(d.cuenta) + '</span>' : '') + (d.nota ? '<br><span class="small muted">' + esc(d.nota) + '</span>' : '') + '</div>' +
+        (d.cuenta ? '<button class="copiar" data-copiar="' + esc(d.cuenta) + '">Copiar</button>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-copiar]'); if (!b) return;
+    var t = b.getAttribute('data-copiar');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { b.textContent = 'Copiado'; setTimeout(function () { b.textContent = 'Copiar'; }, 1500); })
+      .catch(function () { window.prompt('Copia el dato:', t); });
+  });
+
+  // ---------- recordatorios (Firebase Cloud Messaging)
+  var esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var instalada = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  function avisosActivos() { try { return localStorage.getItem('mp_avisos') === TOKEN && Notification.permission === 'granted'; } catch (e) { return false; } }
+  function tarjetaAvisos(r) {
+    if (avisosActivos()) return '';
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      if (esIOS && !instalada) return '<div class="aviso warn">Para recibir recordatorios en iPhone, primero instala la app: toca <b>Compartir</b> y luego <b>Agregar a inicio</b>. Después ábrela desde el ícono.</div>';
+      return '';
+    }
+    if (Notification.permission === 'denied') return '<div class="aviso warn">Los recordatorios están bloqueados en este celular. Puedes habilitarlos en los ajustes de notificaciones del navegador o de la app.</div>';
+    return '<div class="card" id="avisos"><h2>Recordatorios</h2><div class="small muted">' + (r.sistema === 'ESA' ? 'Recibe un aviso el día 1 de cada mes y el último día del beneficio por pago puntual' : 'Recibe un aviso el día anterior a cada sesión') + ', aunque la app esté cerrada.</div>' +
+      '<button class="btn" id="activar">Activar recordatorios</button><div id="avisos-msj"></div></div>';
+  }
+  function cargarScript(src) { return new Promise(function (ok, mal) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = function () { mal(new Error('No se pudo cargar ' + src)); }; document.head.appendChild(s); }); }
+  function activarAvisos() {
+    var caja = $('avisos'), msj = function (t, c) { $('avisos-msj').innerHTML = '<div class="aviso ' + (c || 'warn') + '" style="margin-top:12px">' + t + '</div>'; };
+    caja.classList.add('cargando'); msj('Activando…');
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') throw new Error('No se aceptaron las notificaciones. Si cambias de idea, vuelve a tocar el botón.');
+      return cargarScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js')
+        .then(function () { return cargarScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js'); })
+        .then(function () { return navigator.serviceWorker.register('sw.js'); })
+        .then(function () { return navigator.serviceWorker.ready; })
+        .then(function (reg) {
+          if (!firebase.apps.length) firebase.initializeApp(window.MP_FB);
+          return firebase.messaging().getToken({ vapidKey: window.MP_VAPID, serviceWorkerRegistration: reg });
+        });
+    }).then(function (fcm) {
+      if (!fcm) throw new Error('El celular no entregó el permiso. Inténtalo de nuevo.');
+      return enviar({ a: 'suscribir', t: TOKEN, fcm: fcm, plataforma: (esIOS ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : 'Computadora') + (instalada ? ' (app instalada)' : '') });
+    }).then(function (d) {
+      caja.classList.remove('cargando');
+      if (!d.ok) throw new Error(d.error);
+      try { localStorage.setItem('mp_avisos', TOKEN); } catch (e) { }
+      caja.innerHTML = '<div class="aviso ok" style="margin:0"><b>Recordatorios activados.</b> ' + (d.prueba ? 'Te enviamos un aviso de prueba.' : esc(d.mensaje)) + '</div>';
+    }).catch(function (e) { caja.classList.remove('cargando'); msj(esc(e.message || e), 'bad'); });
   }
 
   // ---------- partes comunes
@@ -172,6 +235,7 @@
   function aviso(txt, tipo) { $('f-msj').innerHTML = txt ? '<div class="aviso ' + (tipo || 'ok') + '" style="margin-top:12px">' + txt + '</div>' : ''; }
 
   function enlazarFormulario(r) {
+    if ($('activar')) $('activar').onclick = activarAvisos;
     if (!$('f-enviar')) return;
     var sistema = r.sistema;
     if (sistema === 'ESA') {
