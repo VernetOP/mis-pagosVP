@@ -101,15 +101,18 @@
     var pagables = r.sesiones.filter(function (s) { return s.disponible > 0.005; });
     if (r.proxima && r.proxima.disponible > 0.005) pagables.push(r.proxima);
     h += '<div class="card" id="form"><h2>Registrar un pago</h2>';
-    if (!pagables.length) h += '<div class="vacio">No tienes sesiones pendientes de pago.</div>';
-    else {
-      h += '<div class="small muted">Marca la sesión o las sesiones que pagas. Si pagas solo una parte, cambia el monto. Si pagas de más, la diferencia queda a tu favor.</div><div style="margin-top:6px">';
+    {
+      h += '<div class="small muted">' + (pagables.length ? 'Marca la sesión o las sesiones que pagas. Si pagas solo una parte, cambia el monto. Si pagas de más, la diferencia queda a tu favor.' :
+        'No tienes sesiones pendientes de pago.') + ' También puedes hacer un <b>pago a cuenta</b> (adelanto o abono): queda como saldo a favor y se descuenta de tus próximas sesiones.</div><div style="margin-top:6px">';
       pagables.forEach(function (s, i) {
         h += '<div class="pick"><input type="checkbox" id="ck-' + i + '" data-clave="' + esc(s.clave) + '" data-max="' + s.disponible + '"' + (s === r.proxima ? '' : ' checked') + '>' +
           '<label class="d" for="ck-' + i + '" style="margin:0;color:var(--ink);font-weight:500"><b>' + esc(ddmm(s.fecha)) + '</b>' + (s === r.proxima ? ' (sesión en curso)' : '') + '<br><span class="small muted">' +
           (s.enRevision > 0 || s.pagado > 0 ? 'Pendiente ' + esc(fmt(s.disponible, mon)) : esc(s.valorTxt)) + '</span></label>' +
           '<div class="m"><input id="mt-' + i + '" inputmode="decimal" aria-label="Monto para el ' + esc(ddmm(s.fecha)) + '" value="' + String(s.disponible).replace('.', ',') + '"></div></div>';
       });
+      h += '<div class="pick"><input type="checkbox" id="ck-cta"' + (pagables.length ? '' : ' checked') + '>' +
+        '<label class="d" for="ck-cta" style="margin:0;color:var(--ink);font-weight:500"><b>Pago a cuenta</b><br><span class="small muted">Adelanto o abono · queda a tu favor</span></label>' +
+        '<div class="m"><input id="mt-cta" inputmode="decimal" aria-label="Monto del pago a cuenta" placeholder="Monto"></div></div>';
       h += '</div><div class="total"><span>Total</span><span id="total"></span></div>' + camposComunes(r);
     }
     h += '</div>' + terminos(r) + revisiones(r);
@@ -176,7 +179,7 @@
   var instalada = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   function avisosActivos() { try { return localStorage.getItem('mp_avisos') === TOKEN && Notification.permission === 'granted'; } catch (e) { return false; } }
   function tarjetaAvisos(r) {
-    if (avisosActivos()) return '';
+    if (avisosActivos()) return '<div class="small muted" id="avisos" style="margin:4px 0 14px">Recordatorios activados en este celular. <a href="#" id="probar">Enviar un aviso de prueba</a><div id="avisos-msj"></div></div>';
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
       if (esIOS && !instalada) return '<div class="aviso warn">Para recibir recordatorios en iPhone, primero instala la app: toca <b>Compartir</b> y luego <b>Agregar a inicio</b>. Después ábrela desde el ícono.</div>';
       return '';
@@ -186,19 +189,44 @@
       '<button class="btn" id="activar">Activar recordatorios</button><div id="avisos-msj"></div></div>';
   }
   function cargarScript(src) { return new Promise(function (ok, mal) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = function () { mal(new Error('No se pudo cargar ' + src)); }; document.head.appendChild(s); }); }
+  // Con la app abierta, Firebase no muestra el aviso solo: lo mostramos nosotros.
+  var ESCUCHA = false;
+  function prepararMensajeria() {
+    return cargarScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js')
+      .then(function () { return cargarScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js'); })
+      .then(function () { return navigator.serviceWorker.register('sw.js'); })
+      .then(function () { return navigator.serviceWorker.ready; })
+      .then(function (reg) {
+        if (!firebase.apps.length) firebase.initializeApp(window.MP_FB);
+        var m = firebase.messaging();
+        if (!ESCUCHA) {
+          ESCUCHA = true;
+          m.onMessage(function (p) {
+            var n = (p && p.notification) || {};
+            reg.showNotification(n.title || 'MisPagosVP', { body: n.body || '', icon: 'icon-192.png', badge: 'icon-192.png' });
+          });
+        }
+        return { reg: reg, m: m };
+      });
+  }
+  function escucharSiActivos() { if (avisosActivos()) prepararMensajeria().catch(function () { }); }
+  function probarAviso(e) {
+    if (e) e.preventDefault();
+    var msj = function (t, c) { $('avisos-msj').innerHTML = '<div class="aviso ' + (c || 'warn') + '" style="margin-top:8px">' + t + '</div>'; };
+    msj('Enviando…');
+    prepararMensajeria().then(function () { return llamar({ a: 'probar', t: TOKEN }); }).then(function (d) {
+      if (!d.ok) throw new Error(d.error);
+      msj(esc(d.mensaje) + (d.enviados ? ' Si en unos segundos no aparece, revisa en los ajustes del celular que las notificaciones de MisPagosVP (o de Chrome) estén permitidas.' : ''), d.enviados ? 'ok' : 'warn');
+    }).catch(function (er) { msj(esc(er.message || er), 'bad'); });
+  }
   function activarAvisos() {
     var caja = $('avisos'), msj = function (t, c) { $('avisos-msj').innerHTML = '<div class="aviso ' + (c || 'warn') + '" style="margin-top:12px">' + t + '</div>'; };
     caja.classList.add('cargando'); msj('Activando…');
     Notification.requestPermission().then(function (perm) {
       if (perm !== 'granted') throw new Error('No se aceptaron las notificaciones. Si cambias de idea, vuelve a tocar el botón.');
-      return cargarScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js')
-        .then(function () { return cargarScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js'); })
-        .then(function () { return navigator.serviceWorker.register('sw.js'); })
-        .then(function () { return navigator.serviceWorker.ready; })
-        .then(function (reg) {
-          if (!firebase.apps.length) firebase.initializeApp(window.MP_FB);
-          return firebase.messaging().getToken({ vapidKey: window.MP_VAPID, serviceWorkerRegistration: reg });
-        });
+      return prepararMensajeria().then(function (x) {
+        return x.m.getToken({ vapidKey: window.MP_VAPID, serviceWorkerRegistration: x.reg });
+      });
     }).then(function (fcm) {
       if (!fcm) throw new Error('El celular no entregó el permiso. Inténtalo de nuevo.');
       return enviar({ a: 'suscribir', t: TOKEN, fcm: fcm, plataforma: (esIOS ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : 'Computadora') + (instalada ? ' (app instalada)' : '') });
@@ -236,6 +264,8 @@
 
   function enlazarFormulario(r) {
     if ($('activar')) $('activar').onclick = activarAvisos;
+    if ($('probar')) $('probar').onclick = probarAviso;
+    escucharSiActivos();
     if (!$('f-enviar')) return;
     var sistema = r.sistema;
     if (sistema === 'ESA') {
@@ -244,10 +274,11 @@
     } else {
       var sumar = function () {
         var t = 0;
-        document.querySelectorAll('.pick input[type=checkbox]').forEach(function (c, i) { if (c.checked) t += num($('mt-' + i).value); });
+        document.querySelectorAll('.pick input[type=checkbox]').forEach(function (c) { if (c.checked) t += num($(c.id.replace('ck-', 'mt-')).value); });
         $('total').textContent = fmt(t, r.moneda);
       };
       document.querySelectorAll('.pick input').forEach(function (x) { x.oninput = sumar; x.onchange = sumar; });
+      $('mt-cta').oninput = function () { $('ck-cta').checked = num(this.value) > 0; sumar(); };
       sumar();
     }
     $('f-comp').onchange = function () {
@@ -291,14 +322,20 @@
     } else {
       o.items = [];
       var err = '';
-      document.querySelectorAll('.pick input[type=checkbox]').forEach(function (c, i) {
-        if (!c.checked) return;
-        var m = num($('mt-' + i).value), max = Number(c.getAttribute('data-max'));
+      var cta = $('ck-cta');
+      if (cta && cta.checked) {
+        o.aCuenta = num($('mt-cta').value);
+        if (!(o.aCuenta > 0)) return aviso('Indica el monto del pago a cuenta.', 'bad');
+        if (/saldo a favor/i.test(o.medio)) return aviso('El saldo a favor se usa para pagar sesiones, no para un pago a cuenta.', 'bad');
+      }
+      document.querySelectorAll('.pick input[type=checkbox]').forEach(function (c) {
+        if (!c.checked || c.id === 'ck-cta') return;
+        var m = num($(c.id.replace('ck-', 'mt-')).value), max = Number(c.getAttribute('data-max'));
         if (!(m > 0)) err = 'Indica el monto de cada sesión marcada.';
         else if (/saldo a favor/i.test(o.medio) && m > max + 0.01) err = 'Con saldo a favor solo puedes cubrir lo pendiente de cada sesión (' + fmt(max, r.moneda) + ').';
         o.items.push({ clave: c.getAttribute('data-clave'), monto: m });
       });
-      if (!o.items.length) return aviso('Marca la sesión o las sesiones que pagas.', 'bad');
+      if (!o.items.length && !(o.aCuenta > 0)) return aviso('Marca la sesión o las sesiones que pagas, o indica un pago a cuenta.', 'bad');
       if (err) return aviso(esc(err), 'bad');
     }
     var form = $('form'); form.classList.add('cargando'); aviso('Enviando…', 'warn');

@@ -1,4 +1,4 @@
-const C='mispagos-v2';
+const C='mispagos-v3';
 // Recordatorios: Firebase Cloud Messaging muestra los avisos aunque la app esté cerrada.
 try {
   importScripts('config.js', 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js', 'https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
