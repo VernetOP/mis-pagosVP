@@ -3,7 +3,8 @@
   'use strict';
   var API = window.MP_API;
   var $ = function (id) { return document.getElementById(id); };
-  var DATA = null, ROL = 0, COMP = {};   // COMP: comprobante elegido por rol
+  var DATA = null, ROL = 0, COMP = {}, SEC = 'ses';   // COMP: comprobante elegido por rol · SEC: pestaña visible
+  var TITULO = { PAC: 'Psicoterapia', SUP: 'Supervisiones', ESA: 'Formación' }, ORDEN = { PAC: 0, SUP: 1, ESA: 2 };
 
   // ---------- enlace personal (token)
   var TOKEN = '';
@@ -39,6 +40,7 @@
     }
     llamar({ a: 'estado', t: TOKEN }).then(function (d) {
       if (!d.ok) throw new Error(d.error);
+      d.roles.sort(function (a, b) { return ORDEN[a.sistema] - ORDEN[b.sistema]; });
       DATA = d; $('saludo').textContent = 'Hola, ' + d.nombre.split(' ')[0];
       if (ROL >= d.roles.length) ROL = 0;
       pintarTabs(); pintar();
@@ -52,15 +54,17 @@
     if (DATA.roles.length < 2) { t.classList.add('oculto'); return; }
     t.classList.remove('oculto');
     t.innerHTML = DATA.roles.map(function (r, i) {
-      var et = r.sistema === 'PAC' ? 'Terapia' : r.sistema === 'SUP' ? 'Supervisión' : 'ESA.VP';
+      var et = TITULO[r.sistema];
       return '<button data-i="' + i + '" class="' + (i === ROL ? 'on' : '') + '">' + et + '</button>';
     }).join('');
-    t.querySelectorAll('button').forEach(function (b) { b.onclick = function () { ROL = +b.getAttribute('data-i'); pintarTabs(); pintar(); window.scrollTo(0, 0); }; });
+    t.querySelectorAll('button').forEach(function (b) { b.onclick = function () { ROL = +b.getAttribute('data-i'); SEC = 'ses'; pintarTabs(); pintar(); window.scrollTo(0, 0); }; });
   }
   function pintar() {
     var r = DATA.roles[ROL];
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">MisPagosVP · versión 4</div>';
+    $('titulo').textContent = TITULO[r.sistema];
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">MisPagosVP · versión 5</div>';
     enlazarFormulario(r);
+    enlazarSecciones(r);
   }
 
   // ---------- Pacientes y supervisados
@@ -69,17 +73,39 @@
     return '<span class="chip ' + c + '">' + esc(s.estado) + '</span>' + (s.enRevision > 0 ? '<br><span class="small muted">en revisión ' + esc(fmt(s.enRevision, mon)) + '</span>' : '');
   }
   function vistaSes(r) {
-    var h = '', mon = r.moneda;
-    if (r.proxima) {
-      var p0 = r.proxima;
-      h += '<div class="prox"><h2>Tu próxima ' + (r.sistema === 'SUP' ? 'supervisión' : 'sesión') + '</h2><div class="dia">' + esc(r.proximaLarga.charAt(0).toUpperCase() + r.proximaLarga.slice(1)) + '</div>' +
-        '<div class="hora">' + esc(r.proximaHora) + ' h <span style="font-weight:400;font-size:15px">(hora de Buenos Aires) · 50 minutos</span></div>' +
-        '<div class="det">' + (p0.resta > 0 ? 'Valor ' + esc(p0.valorTxt) + ' · abonar antes del ' + esc(menosUnDia(p0.fecha)) + ' (24 horas antes)' : 'Ya está paga. ¡Gracias!') +
-        (p0.enRevision > 0 ? ' · pago en revisión' : '') + '</div></div>';
-    } else {
-      h += '<div class="prox"><h2>Tu próxima ' + (r.sistema === 'SUP' ? 'supervisión' : 'sesión') + '</h2><div class="hora">Todavía no hay una próxima sesión confirmada.</div></div>';
-    }
-    h += tarjetaAvisos(r);
+    var mon = r.moneda, sup = r.sistema === 'SUP', palabra = sup ? 'supervisión' : 'sesión';
+    var proximas = r.proximas || (r.proxima ? [r.proxima] : []);
+    // ---- Pestañas
+    var h = '<div class="secs">' +
+      '<button data-s="ses" class="s-ses' + (SEC === 'ses' ? ' on' : '') + '">' + (sup ? 'Supervisiones' : 'Sesiones') + '</button>' +
+      '<button data-s="pag" class="s-pag' + (SEC === 'pag' ? ' on' : '') + '">Pagos' + (r.impagas ? ' <span class="punto"></span>' : '') + '</button>' +
+      '<button data-s="acu" class="s-acu' + (SEC === 'acu' ? ' on' : '') + '">Acuerdos</button></div>';
+
+    // ---- 1. Sesiones
+    h += '<div class="panel p-ses' + (SEC === 'ses' ? '' : ' oculto') + '" id="p-ses">';
+    if (!proximas.length) h += '<div class="prox"><h2>Tu próxima ' + palabra + '</h2><div class="hora">Todavía no hay una próxima ' + palabra + ' confirmada.</div></div>';
+    proximas.forEach(function (p, i) {
+      var larga = p.larga || r.proximaLarga || '';
+      var pagada = p.resta <= 0.005 || p.valor === 0, enRev = !pagada && p.disponible <= 0.005;
+      h += '<div class="prox"><h2>' + (i === 0 ? 'Tu próxima ' + palabra : 'Siguiente ' + palabra) + '</h2>' +
+        '<div class="dia">' + esc(larga.charAt(0).toUpperCase() + larga.slice(1)) + '</div>' +
+        '<div class="hora">' + esc(p.hora) + ' h <span style="font-weight:400;font-size:15px">(hora de Buenos Aires)</span></div>' +
+        '<div class="dur">Duración: ' + (r.duracion || 50) + ' minutos</div>' +
+        '<div class="det">' + (p.valor === 0 ? 'Sin cargo' : pagada ? 'Ya está paga. ¡Gracias!' : 'Valor ' + esc(p.valorTxt) + ' · abonar antes del ' + esc(menosUnDia(p.fecha)) + ' (24 horas antes)' +
+          (p.pagado > 0 ? ' · falta ' + esc(p.restaTxt) : '')) + (enRev ? ' · pago en revisión' : '') + '</div>' +
+        '<div class="lugar">' + (r.direccion ? 'Si vienes presencial, te espero en ' + esc(r.direccion) + '.<br>' : '') +
+        'Recuerda confirmar si nos conectamos por Meet o Zoom.</div>';
+      if (p.enlaces && p.enlaces.length) h += '<div class="enl">' + p.enlaces.map(function (e) {
+        return '<a class="btn-enl" href="' + esc(e.url) + '" target="_blank" rel="noopener">Entrar por ' + esc(e.tipo) + '</a>';
+      }).join('') + '</div>';
+      h += pagada || enRev ? '<button class="btn-prox" disabled>' + (enRev ? 'Pago en revisión' : p.valor === 0 ? 'Sin cargo' : 'Ya está paga') + '</button>'
+        : '<button class="btn-prox" data-pagar="' + esc(p.clave) + '">Pagar esta ' + palabra + '</button>';
+      h += '</div>';
+    });
+    h += tarjetaAvisos(r) + '</div>';
+
+    // ---- 2. Pagos
+    h += '<div class="panel p-pag' + (SEC === 'pag' ? '' : ' oculto') + '" id="p-pag">';
     if (r.impagas) {
       h += '<div class="aviso bad"><b>Tienes ' + r.impagas + (r.impagas > 1 ? ' sesiones impagas' : ' sesión impaga') + '.</b>' +
         (r.sinRegistrar && r.sinRegistrar < r.impagas ? ' ' + r.sinRegistrar + ' sin pago registrado.' : (r.sinRegistrar ? ' Aún no registraste el pago.' : ' Ya registraste el pago: está en revisión.')) + '</div>';
@@ -87,10 +113,10 @@
     if (r.enRevision > 0) h += '<div class="aviso warn">Pagos en revisión: <b>' + esc(r.enRevisionTxt) + '</b>. Se descuentan cuando el Lic. Vernet los confirma.</div>';
     h += '<div class="card"><h2>Estado de cuenta</h2><div class="big ' + (r.saldo > 0 ? 'bad' : 'ok') + '">' +
       (r.saldo > 0 ? 'Debes ' + esc(r.saldoTxt) : r.saldo < 0 ? 'A favor ' + esc(r.saldoTxt) : 'Al día') + '</div>' +
-      (r.valorSesionTxt ? '<div class="muted" style="margin-top:6px">Valor de tu sesión: <b>' + esc(r.valorSesionTxt) + '</b></div>' : '') +
-      (r.credito > 0 ? '<div class="aviso ok" style="margin:10px 0 0">Tienes <b>' + esc(r.creditoTxt) + '</b> a favor. Puedes usarlo para pagar una sesión: elige "Saldo a favor" como medio de pago.</div>' : '') + '</div>';
-    h += '<div class="card"><h2>' + (r.impagas ? 'Desde la sesión impaga más antigua (' + esc(r.desdeTxt) + ')' : 'Últimas sesiones') + '</h2>';
-    if (!r.sesiones.length) h += '<div class="vacio">No hay sesiones en este período.</div>';
+      (r.valorSesionTxt ? '<div class="muted" style="margin-top:6px">Valor de tu ' + palabra + ': <b>' + esc(r.valorSesionTxt) + '</b></div>' : '') +
+      (r.credito > 0 ? '<div class="aviso ok" style="margin:10px 0 0">Tienes <b>' + esc(r.creditoTxt) + '</b> a favor. Puedes usarlo para pagar una ' + palabra + ': elige "Saldo a favor" como medio de pago.</div>' : '') + '</div>';
+    h += '<div class="card"><h2>Últimas ' + (sup ? 'supervisiones' : 'sesiones') + '</h2>';
+    if (!r.sesiones.length) h += '<div class="vacio">Todavía no hay ' + (sup ? 'supervisiones' : 'sesiones') + ' registradas.</div>';
     r.sesiones.slice().reverse().forEach(function (s) {
       h += '<div class="row"><div class="l"><b>' + esc(s.fechaTxt) + '</b><br><span class="small muted">' + esc(s.asistencia) + '</span>' +
         (s.estado === 'Pago parcial' ? '<br><span class="small">Pagaste ' + esc(s.pagadoTxt) + ' · falta ' + esc(s.restaTxt) + '</span>' : '') +
@@ -98,25 +124,49 @@
     });
     h += '</div>';
     h += datosPago(r);
-    var pagables = r.sesiones.filter(function (s) { return s.disponible > 0.005; });
-    if (r.proxima && r.proxima.disponible > 0.005) pagables.push(r.proxima);
+    var pagables = r.sesiones.filter(function (s) { return s.disponible > 0.005; }), vistas = {};
+    pagables.forEach(function (s) { vistas[s.clave] = 1; });
+    proximas.forEach(function (s) { if (s.disponible > 0.005 && !vistas[s.clave]) { s.futura = true; pagables.push(s); vistas[s.clave] = 1; } });
     h += '<div class="card" id="form"><h2>Registrar un pago</h2>';
-    {
-      h += '<div class="small muted">' + (pagables.length ? 'Marca la sesión o las sesiones que pagas. Si pagas solo una parte, cambia el monto. Si pagas de más, la diferencia queda a tu favor.' :
-        'No tienes sesiones pendientes de pago.') + ' También puedes hacer un <b>pago a cuenta</b> (adelanto o abono): queda como saldo a favor y se descuenta de tus próximas sesiones.</div><div style="margin-top:6px">';
-      pagables.forEach(function (s, i) {
-        h += '<div class="pick"><input type="checkbox" id="ck-' + i + '" data-clave="' + esc(s.clave) + '" data-max="' + s.disponible + '"' + (s === r.proxima ? '' : ' checked') + '>' +
-          '<label class="d" for="ck-' + i + '" style="margin:0;color:var(--ink);font-weight:500"><b>' + esc(ddmm(s.fecha)) + '</b>' + (s === r.proxima ? ' (sesión en curso)' : '') + '<br><span class="small muted">' +
-          (s.enRevision > 0 || s.pagado > 0 ? 'Pendiente ' + esc(fmt(s.disponible, mon)) : esc(s.valorTxt)) + '</span></label>' +
-          '<div class="m"><input id="mt-' + i + '" inputmode="decimal" aria-label="Monto para el ' + esc(ddmm(s.fecha)) + '" value="' + String(s.disponible).replace('.', ',') + '"></div></div>';
-      });
-      h += '<div class="pick"><input type="checkbox" id="ck-cta"' + (pagables.length ? '' : ' checked') + '>' +
-        '<label class="d" for="ck-cta" style="margin:0;color:var(--ink);font-weight:500"><b>Pago a cuenta</b><br><span class="small muted">Adelanto o abono · queda a tu favor</span></label>' +
-        '<div class="m"><input id="mt-cta" inputmode="decimal" aria-label="Monto del pago a cuenta" placeholder="Monto"></div></div>';
-      h += '</div><div class="total"><span>Total</span><span id="total"></span></div>' + camposComunes(r);
-    }
-    h += '</div>' + terminos(r) + revisiones(r);
+    h += '<div class="small muted">' + (pagables.length ? 'Marca la ' + palabra + ' o las que pagas. Si pagas solo una parte, cambia el monto. Si pagas de más, la diferencia queda a tu favor.' :
+      'No tienes ' + (sup ? 'supervisiones' : 'sesiones') + ' pendientes de pago.') + ' También puedes hacer un <b>pago a cuenta</b> (adelanto o abono): queda como saldo a favor y se descuenta de tus próximas ' + (sup ? 'supervisiones' : 'sesiones') + '.</div><div style="margin-top:6px">';
+    pagables.forEach(function (s, i) {
+      h += '<div class="pick"><input type="checkbox" id="ck-' + i + '" data-clave="' + esc(s.clave) + '" data-max="' + s.disponible + '"' + (s.futura ? '' : ' checked') + '>' +
+        '<label class="d" for="ck-' + i + '" style="margin:0;color:var(--ink);font-weight:500"><b>' + esc(ddmm(s.fecha)) + '</b>' + (s.futura ? ' (próxima)' : '') + '<br><span class="small muted">' +
+        (s.enRevision > 0 || s.pagado > 0 ? 'Pendiente ' + esc(fmt(s.disponible, mon)) : esc(s.valorTxt)) + '</span></label>' +
+        '<div class="m"><input id="mt-' + i + '" inputmode="decimal" aria-label="Monto para el ' + esc(ddmm(s.fecha)) + '" value="' + String(s.disponible).replace('.', ',') + '"></div></div>';
+    });
+    h += '<div class="pick"><input type="checkbox" id="ck-cta"' + (pagables.length ? '' : ' checked') + '>' +
+      '<label class="d" for="ck-cta" style="margin:0;color:var(--ink);font-weight:500"><b>Pago a cuenta</b><br><span class="small muted">Adelanto o abono · queda a tu favor</span></label>' +
+      '<div class="m"><input id="mt-cta" inputmode="decimal" aria-label="Monto del pago a cuenta" placeholder="Monto"></div></div>';
+    h += '</div><div class="total"><span>Total</span><span id="total"></span></div>' + camposComunes(r);
+    h += '</div>' + revisiones(r) + '</div>';
+
+    // ---- 3. Acuerdos
+    h += '<div class="panel p-acu' + (SEC === 'acu' ? '' : ' oculto') + '" id="p-acu">' + terminosAbiertos(r) + '</div>';
     return h;
+  }
+  function terminosAbiertos(r) {
+    if (!r.terminos) return '<div class="card"><div class="vacio">Sin acuerdos cargados.</div></div>';
+    var t = esc(r.terminos).split(/\n+/).map(function (p) { return '<p>' + p + '</p>'; }).join('');
+    return '<div class="card"><h2>Términos y condiciones (encuadre)</h2><div class="terms">' + t + '</div></div>';
+  }
+  function mostrarSeccion(sec) {
+    SEC = sec;
+    document.querySelectorAll('.secs button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-s') === sec); });
+    ['ses', 'pag', 'acu'].forEach(function (k) { var p = $('p-' + k); if (p) p.classList.toggle('oculto', k !== sec); });
+  }
+  function enlazarSecciones(r) {
+    document.querySelectorAll('.secs button').forEach(function (b) { b.onclick = function () { mostrarSeccion(b.getAttribute('data-s')); window.scrollTo(0, 0); }; });
+    document.querySelectorAll('[data-pagar]').forEach(function (b) {
+      b.onclick = function () {
+        var cl = b.getAttribute('data-pagar');
+        mostrarSeccion('pag');
+        document.querySelectorAll('.pick input[type=checkbox]').forEach(function (c) { c.checked = c.getAttribute('data-clave') === cl; });
+        var c0 = document.querySelector('.pick input[type=checkbox]'); if (c0) c0.dispatchEvent(new Event('change'));
+        $('form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+    });
   }
 
   // ---------- Estudiantes ESA.VP
