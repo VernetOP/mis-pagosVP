@@ -62,7 +62,7 @@
   function pintar() {
     var r = DATA.roles[ROL];
     $('titulo').textContent = TITULO[r.sistema];
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">MisPagosVP · versión 5</div>';
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">MisPagosVP · versión 6</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
@@ -83,6 +83,14 @@
 
     // ---- 1. Sesiones
     h += '<div class="panel p-ses' + (SEC === 'ses' ? '' : ' oculto') + '" id="p-ses">';
+    var deudas = r.sesiones.filter(function (s) { return s.resta > 0.005; });
+    if (deudas.length) {
+      var totDeuda = deudas.reduce(function (a, s) { return a + s.resta; }, 0);
+      h += '<div class="deuda"><h2>' + (sup ? 'Supervisiones' : 'Sesiones') + ' en deuda</h2>' + deudas.map(function (s) {
+        return '<div class="dl"><span>' + esc(s.fechaTxt) + (s.disponible <= 0.005 ? ' <span class="small">(pago en revisión)</span>' : '') + '</span><span>' + esc(fmt(s.resta, mon)) + '</span></div>';
+      }).join('') + '<div class="dl tot"><span>Total adeudado</span><span>' + esc(fmt(totDeuda, mon)) + '</span></div>' +
+        '<button class="btn-deuda" id="ir-pagar">Ir a pagar</button></div>';
+    }
     if (!proximas.length) h += '<div class="prox"><h2>Tu próxima ' + palabra + '</h2><div class="hora">Todavía no hay una próxima ' + palabra + ' confirmada.</div></div>';
     proximas.forEach(function (p, i) {
       var larga = p.larga || r.proximaLarga || '';
@@ -148,8 +156,9 @@
   }
   function terminosAbiertos(r) {
     if (!r.terminos) return '<div class="card"><div class="vacio">Sin acuerdos cargados.</div></div>';
-    var t = esc(r.terminos).split(/\n+/).map(function (p) { return '<p>' + p + '</p>'; }).join('');
-    return '<div class="card"><h2>Términos y condiciones (encuadre)</h2><div class="terms">' + t + '</div></div>';
+    var t = r.terminos.split(/\n+/).map(function (p) { return p.replace(/^\s*[-•]\s*/, '').trim(); }).filter(Boolean)
+      .map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('');
+    return '<div class="card"><h2>Términos y condiciones (encuadre)</h2><ul class="vinetas">' + t + '</ul></div>';
   }
   function mostrarSeccion(sec) {
     SEC = sec;
@@ -158,6 +167,7 @@
   }
   function enlazarSecciones(r) {
     document.querySelectorAll('.secs button').forEach(function (b) { b.onclick = function () { mostrarSeccion(b.getAttribute('data-s')); window.scrollTo(0, 0); }; });
+    if ($('ir-pagar')) $('ir-pagar').onclick = function () { mostrarSeccion('pag'); $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     document.querySelectorAll('[data-pagar]').forEach(function (b) {
       b.onclick = function () {
         var cl = b.getAttribute('data-pagar');
