@@ -59,7 +59,7 @@
   }
   function pintar() {
     var r = DATA.roles[ROL];
-    $('vista').innerHTML = r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r);
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">MisPagosVP · versión 4</div>';
     enlazarFormulario(r);
   }
 
