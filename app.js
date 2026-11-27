@@ -65,7 +65,7 @@
     var esEsa = r.sistema === 'ESA';
     $('logo').classList.toggle('oculto', !esEsa);
     document.querySelectorAll('.school,.brand').forEach(function (x) { x.classList.toggle('oculto', esEsa); });
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 10</div>';
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 11</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
@@ -237,7 +237,7 @@
   }
   function detalleClase(c) {
     var g = function (tit, l) { return l && l.length ? '<div class="cl-g"><span class="small muted">' + tit + '</span><div>' + l.map(function (x) { return '<a class="lnk" href="' + esc(x.u) + '" target="_blank" rel="noopener">' + esc(x.t || tit) + '</a>'; }).join('') + '</div></div>' : ''; };
-    var h = '<div class="cl-mat">' + esc(c.materia || '') + '</div>' + g('Lecturas', c.lecturas) + g('Material', c.material) + g('Crónica', c.cronica) + g('Video', c.video) + g('Docentes', c.plan);
+    var h = '<div class="cl-mat">' + esc(c.materia || '') + '</div>' + (c.datos || []).map(function (d) { return '<div class="small"><span class="muted">' + esc(d.k) + ':</span> ' + esc(d.v) + '</div>'; }).join('') + g('Lecturas', c.lecturas) + g('Material', c.material) + g('Crónica', c.cronica) + g('Video', c.video) + g('Docentes', c.plan);
     if (!(c.lecturas.length || c.material.length || c.cronica.length || c.video.length || (c.plan || []).length) && !c.feriado) h += '<div class="small muted">Todavía no hay materiales cargados para esta clase.</div>';
     return h;
   }
