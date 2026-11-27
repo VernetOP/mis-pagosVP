@@ -62,7 +62,10 @@
   function pintar() {
     var r = DATA.roles[ROL];
     $('titulo').textContent = TITULO[r.sistema];
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 8</div>';
+    var esEsa = r.sistema === 'ESA';
+    $('logo').classList.toggle('oculto', !esEsa);
+    document.querySelectorAll('.school,.brand').forEach(function (x) { x.classList.toggle('oculto', esEsa); });
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 10</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
@@ -162,11 +165,12 @@
   }
   function mostrarSeccion(sec) {
     SEC = sec;
-    document.querySelectorAll('.secs button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-s') === sec); });
-    ['ses', 'pag', 'acu'].forEach(function (k) { var p = $('p-' + k); if (p) p.classList.toggle('oculto', k !== sec); });
+    document.querySelectorAll('.secs button, .btn-avisos').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-s') === sec); });
+    if (sec === 'avi' && DATA) { var rr = DATA.roles[ROL]; if (rr.contenidos) marcarLeidos(rr.contenidos.avisos || []); }
+    ['ses', 'pag', 'acu', 'cur', 'cro', 'avi'].forEach(function (k) { var p = $('p-' + k); if (p) p.classList.toggle('oculto', k !== sec); });
   }
   function enlazarSecciones(r) {
-    document.querySelectorAll('.secs button').forEach(function (b) { b.onclick = function () { mostrarSeccion(b.getAttribute('data-s')); window.scrollTo(0, 0); }; });
+    document.querySelectorAll('.secs button, .btn-avisos').forEach(function (b) { b.onclick = function () { mostrarSeccion(b.getAttribute('data-s')); window.scrollTo(0, 0); }; });
     if ($('ir-pagar')) $('ir-pagar').onclick = function () { mostrarSeccion('pag'); $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     document.querySelectorAll('[data-pagar]').forEach(function (b) {
       b.onclick = function () {
@@ -181,7 +185,85 @@
 
   // ---------- Estudiantes ESA.VP
   function vistaEsa(r) {
-    var h = tarjetaAvisos(r), c = r.mesActual, mon = r.moneda;
+    var cn = r.contenidos || {}, tiene = (cn.estudiante && cn.estudiante !== 'No') || (cn.avanzado && cn.avanzado !== 'No');
+    if (!tiene) return pagosEsa(r, true);
+    var avisos = cn.avisos || [], leidos = avisosLeidos(), nuevos = avisos.filter(function (a) { return leidos.indexOf(a.id) < 0; }).length;
+    if (!PRIMERA_ESA) { PRIMERA_ESA = true; if (nuevos) SEC = 'avi'; }
+    if (['cur', 'cro', 'pag', 'avi'].indexOf(SEC) < 0 || (SEC === 'avi' && !avisos.length)) SEC = 'cur';
+    var deuda = r.deudas.length || r.matricula > 0 || r.saldoAnterior > 0;
+    var h = '';
+    if (avisos.length) h += '<button data-s="avi" class="btn-avisos' + (SEC === 'avi' ? ' on' : '') + '">Avisos' +
+      (nuevos ? ' <span class="nuevos" id="avi-n">' + nuevos + (nuevos > 1 ? ' nuevos' : ' nuevo') + '</span>' : '') + '</button>';
+    h += '<div class="secs">' +
+      '<button data-s="cur" class="s-ses' + (SEC === 'cur' ? ' on' : '') + '">Curso</button>' +
+      '<button data-s="cro" class="s-acu' + (SEC === 'cro' ? ' on' : '') + '">Cronograma</button>' +
+      '<button data-s="pag" class="s-pag' + (SEC === 'pag' ? ' on' : '') + '">Pagos' + (deuda ? ' <span class="punto"></span>' : '') + '</button></div>';
+    h += '<div class="panel p-ses' + (SEC === 'cur' ? '' : ' oculto') + '" id="p-cur">' +
+      (cn.curso.length ? cn.curso.map(recuadro).join('') : '<div class="card"><div class="vacio">Pronto encontrarás aquí la información de tu curso.</div></div>') + tarjetaAvisos(r) + '</div>';
+    h += '<div class="panel p-acu' + (SEC === 'cro' ? '' : ' oculto') + '" id="p-cro">' +
+      (cn.cronograma.length ? cn.cronograma.map(function (c) { return c.clases || c.error ? cronograma(c) : recuadro(c); }).join('') : '<div class="card"><div class="vacio">El cronograma estará disponible pronto.</div></div>') + '</div>';
+    if (avisos.length) h += '<div class="panel p-avi' + (SEC === 'avi' ? '' : ' oculto') + '" id="p-avi">' + avisos.map(function (a) {
+      return '<div class="card aviso-c">' + '<div class="small muted">' + esc(a.fechaTxt) + '</div><h3>' + esc(a.titulo) + '</h3>' +
+        (a.imagen ? '<img src="' + esc(a.imagen) + '" alt="" loading="lazy" onerror="this.remove()">' : '') +
+        (a.texto ? '<div class="terms">' + a.texto.split(/\n+/).map(function (p) { return '<p>' + enlazar(p) + '</p>'; }).join('') + '</div>' : '') + '</div>';
+    }).join('') + '</div>';
+    if (SEC === 'avi') marcarLeidos(avisos);
+    h += '<div class="panel p-pag' + (SEC === 'pag' ? '' : ' oculto') + '" id="p-pag">' + pagosEsa(r, false) + '</div>';
+    return h;
+  }
+  function recuadro(c) {
+    var h = '<div class="card">' + (c.titulo ? '<h2>' + esc(c.titulo) + '</h2>' : '');
+    if (c.texto) h += '<div class="terms">' + c.texto.split(/\n+/).map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div>';
+    if (c.copiar) h += c.copiar.split(/\s*·\s*/).map(function (parte) {
+      var i = parte.indexOf(':'), et = i > 0 ? parte.slice(0, i).trim() : '', val = i > 0 ? parte.slice(i + 1).trim() : parte.trim();
+      return '<div class="cuenta"><div style="min-width:0">' + (et ? '<span class="small muted">' + esc(et) + '</span><br>' : '') + '<span class="num">' + esc(val) + '</span></div>' +
+        '<button class="copiar" data-copiar="' + esc(val) + '">Copiar</button></div>';
+    }).join('');
+    if (c.enlace) h += '<a class="btn" style="display:block;text-align:center;text-decoration:none" href="' + esc(c.enlace) + '" target="_blank" rel="noopener">' + esc(c.boton || 'Abrir') + '</a>';
+    else if (c.boton) h += '<div class="small muted" style="margin-top:10px">' + esc(c.boton) + ': enlace disponible pronto.</div>';
+    return h + '</div>';
+  }
+  var PRIMERA_ESA = false;
+  function avisosLeidos() { try { return JSON.parse(localStorage.getItem('mp_leidos_' + TOKEN) || '[]'); } catch (e) { return []; } }
+  function marcarLeidos(avisos) {
+    try { localStorage.setItem('mp_leidos_' + TOKEN, JSON.stringify(avisos.map(function (a) { return a.id; }))); } catch (e) { }
+    setTimeout(function () { var n = $('avi-n'); if (n) n.remove(); }, 1500);
+  }
+  function enlazar(t) { return esc(t).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>'); }
+  var DIAS_C = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  function fechaCorta(c) {
+    if (!c.fecha) return esc(c.fechaTxt);
+    var d = new Date(c.fecha + 'T12:00:00'); return DIAS_C[d.getDay()] + ' ' + c.fecha.slice(8, 10) + '/' + c.fecha.slice(5, 7);
+  }
+  function detalleClase(c) {
+    var g = function (tit, l) { return l && l.length ? '<div class="cl-g"><span class="small muted">' + tit + '</span><div>' + l.map(function (x) { return '<a class="lnk" href="' + esc(x.u) + '" target="_blank" rel="noopener">' + esc(x.t || tit) + '</a>'; }).join('') + '</div></div>' : ''; };
+    var h = '<div class="cl-mat">' + esc(c.materia || '') + '</div>' + g('Lecturas', c.lecturas) + g('Material', c.material) + g('Crónica', c.cronica) + g('Video', c.video) + g('Docentes', c.plan);
+    if (!(c.lecturas.length || c.material.length || c.cronica.length || c.video.length || (c.plan || []).length) && !c.feriado) h += '<div class="small muted">Todavía no hay materiales cargados para esta clase.</div>';
+    return h;
+  }
+  function cronograma(card) {
+    var h = '<div class="card"><h2>' + esc(card.titulo || 'Cronograma') + '</h2>';
+    if (card.texto) h += '<div class="terms">' + card.texto.split(/\n+/).map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div>';
+    if (card.error || !card.clases) return h + '<div class="aviso warn">' + esc(card.error || 'No se pudo leer el cronograma.') + '</div></div>';
+    var cl = card.clases.clases || [], hoy = hoyISO(), dadas = cl.filter(function (c) { return c.fecha && c.fecha < hoy && !c.feriado; });
+    var ult = dadas[dadas.length - 1], prox = cl.filter(function (c) { return c.fecha && c.fecha >= hoy && !c.feriado; })[0];
+    h += '</div>';
+    var destacado = function (tit, c, cls) { return c ? '<div class="card cl-dest ' + cls + '"><h2>' + tit + ' · ' + fechaCorta(c) + (c.fecha === hoy ? ' · hoy' : '') + '</h2>' + detalleClase(c) + '</div>' : ''; };
+    h += destacado('Próxima clase', prox, 'cl-prox') + destacado('Última clase', ult, 'cl-ult');
+    h += '<div class="card cl-lista"><h2>Cronograma completo</h2>' + cl.map(function (c, i) {
+      var past = c.fecha && c.fecha < hoy, est = c.feriado ? ' cl-fer' : (c === prox ? ' cl-sig' : (past ? ' cl-pas' : ''));
+      return '<div class="cl-item' + (i % 2 ? ' cl-alt' : '') + est + '"><button class="cl-row" data-cl="' + i + '"><span class="cl-f">' + fechaCorta(c) + '</span><span class="cl-t">' +
+        esc(c.feriado && !c.materia ? 'Feriado' : (c.materia || '')) + '</span><span class="cl-x">▾</span></button><div class="cl-det oculto" id="cl-' + i + '">' + detalleClase(c) + '</div></div>';
+    }).join('') + ((card.clases.notas || []).length ? '<div class="small muted" style="margin-top:10px">' + card.clases.notas.map(esc).join('<br>') + '</div>' : '') + '</div>';
+    if (card.enlace && card.boton) h += '<a class="btn" href="' + esc(card.enlace) + '" target="_blank" rel="noopener">' + esc(card.boton) + '</a>';
+    return h;
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.cl-row'); if (!b) return;
+    var d = $('cl-' + b.getAttribute('data-cl')); if (d) { d.classList.toggle('oculto'); b.classList.toggle('abierto'); }
+  });
+  function pagosEsa(r, conAvisos) {
+    var h = conAvisos ? tarjetaAvisos(r) : '', c = r.mesActual, mon = r.moneda;
     if (r.deudas.length || r.matricula > 0 || r.saldoAnterior > 0) h += '<div class="aviso bad"><b>Tienes cuotas o cargos adeudados.</b> Revisa el detalle abajo.</div>';
     if (r.enRevision > 0) h += '<div class="aviso warn">Pagos en revisión: <b>' + esc(r.enRevisionTxt) + '</b>. Se descuentan cuando la escuela los confirma.</div>';
     if (c) {

@@ -35,6 +35,7 @@
   button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:13px 16px;font-weight:700;font-size:16px}
   button:active{transform:scale(.98)}
   .btn{background:var(--accent);color:#fff;width:100%;margin-top:14px}
+  a.btn{display:block;box-sizing:border-box;border-radius:12px;padding:13px 16px;font-weight:700;font-size:16px;text-align:center;text-decoration:none}
   .btn.sec{background:var(--grey);color:var(--ink)}
   .btn.warn{background:var(--warn)}
   .aviso{border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:15px;line-height:1.45}
@@ -96,6 +97,32 @@
   .deuda .dl{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:16px}
   .deuda .dl.tot{border-top:1.5px solid #e4a8a2;margin-top:6px;padding-top:9px;font-weight:700;font-size:18px}
   .btn-deuda{display:block;width:100%;margin-top:12px;background:var(--bad);color:#fff}
+  #logo{display:block;width:150px;height:150px;margin:0 auto 4px;border-radius:50%}
+  #logo.oculto{display:none}
+  .btn-avisos{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin:4px 0 10px;padding:16px;font-size:19px;background:#fdebd8;color:#b25e09;border:2px solid #f0a050;border-radius:16px}
+  .btn-avisos.on{background:#e07b1a;color:#fff;border-color:#e07b1a}
+  .btn-avisos .nuevos{background:var(--bad);color:#fff;font-size:13px;border-radius:999px;padding:3px 10px}
+  .p-avi{background:#fdf3e7}
+  .aviso-c h3{margin:4px 0 10px;font-size:18px}
+  .aviso-c img{display:block;width:100%;border-radius:12px;margin:4px 0 12px}
+  .cl-lista{padding:12px 10px}
+  .cl-item{border-radius:10px}
+  .cl-item.cl-alt{background:#f1ecf8}
+  .cl-row{display:flex;align-items:center;gap:10px;width:100%;background:transparent;text-align:left;padding:11px 8px;font-weight:500;font-size:15px;border-radius:10px;color:var(--ink)}
+  .cl-f{flex:none;width:82px;font-weight:700;color:#5b3c88;font-size:14px}
+  .cl-t{flex:1;min-width:0}
+  .cl-x{flex:none;color:var(--muted);transition:transform .2s}
+  .cl-row.abierto .cl-x{transform:rotate(180deg)}
+  .cl-pas .cl-row{color:var(--muted)} .cl-pas .cl-f{color:#9b8cb3}
+  .cl-fer .cl-row{color:var(--muted);font-style:italic}
+  .cl-sig{outline:2px solid #6b4aa0}
+  .cl-det{padding:0 10px 12px 100px}
+  .cl-mat{font-size:15px;margin-bottom:8px}
+  .cl-g{margin:6px 0}
+  .lnk{display:inline-block;margin:4px 6px 0 0;padding:7px 12px;border-radius:999px;background:#ece4f6;color:#5b3c88;font-weight:600;font-size:14px;text-decoration:none}
+  .cl-dest.cl-prox{border:2px solid #6b4aa0}
+  .cl-dest h2{color:#5b3c88}
+  @media (max-width:420px){.cl-det{padding-left:10px}}
   .cuenta{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
   .cuenta:first-of-type{border-top:0}
   .cuenta .num{font-family:ui-monospace,Consolas,monospace;font-size:15px;word-break:break-all}
@@ -105,6 +132,7 @@
 </head>
 <body>
 <header>
+  <img id="logo" class="oculto" src="logo-esa.jpg" alt="ESA.VP · Escuela de Sociopsicodrama de las Américas">
   <div class="school">Escuela de Sociopsicodrama de las Américas</div>
   <div class="brand">VernetO Psicodrama<sup>®</sup></div>
   <h1 id="titulo">VernetO</h1>
@@ -116,7 +144,7 @@
 </main>
 <button id="instalar" class="btn oculto">Instalar app</button>
 <footer>Los pagos que registras quedan pendientes hasta que el Lic. Vernet los confirma.</footer>
-<script src="config.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="config.js?v=10"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

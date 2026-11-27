@@ -1,4 +1,4 @@
-const C='mispagos-v8';
+const C='mispagos-v10';
 // Recordatorios: el aviso llega por Firebase Cloud Messaging y este archivo lo muestra, aunque la app esté cerrada.
 self.addEventListener('push',e=>{
   let d={};try{d=e.data?e.data.json():{};}catch(x){d={notification:{body:e.data?e.data.text():''}};}
@@ -14,7 +14,7 @@ self.addEventListener('notificationclick',e=>{
     return clients.openWindow(url);
   }));
 });
-const FILES=["./","./index.html","./app.js?v=8","./config.js?v=8","./manifest.json","./icon-192.png","./icon-512.png"];
+const FILES=["./","./index.html","./app.js?v=10","./config.js?v=10","./manifest.json","./icon-192.png","./icon-512.png","./logo-esa.jpg"];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES)));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{
