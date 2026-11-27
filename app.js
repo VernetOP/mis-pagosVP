@@ -65,7 +65,7 @@
     var esEsa = r.sistema === 'ESA';
     $('logo').classList.toggle('oculto', !esEsa);
     document.querySelectorAll('.school,.brand').forEach(function (x) { x.classList.toggle('oculto', esEsa); });
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 13</div>';
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 14</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
