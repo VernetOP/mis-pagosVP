@@ -65,7 +65,7 @@
     var esEsa = r.sistema === 'ESA';
     $('logo').classList.toggle('oculto', !esEsa);
     document.querySelectorAll('.school,.brand').forEach(function (x) { x.classList.toggle('oculto', esEsa); });
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 15</div>';
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 16</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
@@ -170,6 +170,7 @@
     ['ses', 'pag', 'acu', 'cur', 'cro', 'avi'].forEach(function (k) { var p = $('p-' + k); if (p) p.classList.toggle('oculto', k !== sec); });
   }
   function enlazarSecciones(r) {
+    document.querySelectorAll('[data-amb]').forEach(function (b) { b.onclick = function () { AMB = b.getAttribute('data-amb'); try { localStorage.setItem('mp_amb', AMB); } catch (e) { } if (SEC === 'pag' || SEC === 'avi') SEC = 'cur'; pintar(); }; });
     document.querySelectorAll('.secs button, .btn-avisos').forEach(function (b) { b.onclick = function () { mostrarSeccion(b.getAttribute('data-s')); window.scrollTo(0, 0); }; });
     if ($('ir-pagar')) $('ir-pagar').onclick = function () { mostrarSeccion('pag'); $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     document.querySelectorAll('[data-irpagar]').forEach(function (b) { b.onclick = function () { mostrarSeccion('pag'); $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); }; });
@@ -186,13 +187,20 @@
 
   // ---------- Estudiantes ESA.VP
   function vistaEsa(r) {
-    var cn = r.contenidos || {}, tiene = (cn.estudiante && cn.estudiante !== 'No') || (cn.avanzado && cn.avanzado !== 'No');
+    var cn0 = r.contenidos || {}, tiene = (cn0.estudiante && cn0.estudiante !== 'No') || (cn0.avanzado && cn0.avanzado !== 'No');
+    // Formación básica y Avanzado: si la persona está en los dos, elige cuál ver; cada recuadro trae su ámbito
+    var amb = cn0.ambitos || {}, dos = amb.basica && amb.avanzado;
+    if (!dos) AMB = amb.avanzado ? 'avanzado' : 'basica';
+    var deAmb = function (x) { return !dos || !x.ambito || x.ambito === 'ambos' || x.ambito === AMB; };
+    var cn = { curso: (cn0.curso || []).filter(deAmb), cronograma: (cn0.cronograma || []).filter(deAmb), avisos: cn0.avisos || [] };
     if (!tiene) return r.equipo ? '<div class="card"><div class="vacio">Todavía no hay contenidos asignados a tu acceso.</div></div>' : pagosEsa(r, true);
     var avisos = cn.avisos || [], leidos = avisosLeidos(), nuevos = avisos.filter(function (a) { return leidos.indexOf(a.id) < 0; }).length;
     if (!PRIMERA_ESA) { PRIMERA_ESA = true; if (nuevos) SEC = 'avi'; }
     if (['cur', 'cro', 'pag', 'avi'].indexOf(SEC) < 0 || (SEC === 'avi' && !avisos.length) || (SEC === 'pag' && r.equipo)) SEC = 'cur';
     var deuda = r.deudas.length || r.matricula > 0 || r.saldoAnterior > 0;
     var h = '';
+    if (dos) h += '<div class="tabs ambitos"><button data-amb="basica" class="' + (AMB === 'basica' ? 'on' : '') + '">Básica</button>' +
+      '<button data-amb="avanzado" class="' + (AMB === 'avanzado' ? 'on' : '') + '">Avanzada</button></div>';
     if (avisos.length) h += '<button data-s="avi" class="btn-avisos' + (SEC === 'avi' ? ' on' : '') + '">Avisos' +
       (nuevos ? ' <span class="nuevos" id="avi-n">' + nuevos + (nuevos > 1 ? ' nuevos' : ' nuevo') + '</span>' : '') + '</button>';
     h += '<div class="secs">' +
@@ -225,7 +233,8 @@
     else if (c.boton) h += '<div class="small muted" style="margin-top:10px">' + esc(c.boton) + ': enlace disponible pronto.</div>';
     return h + '</div>';
   }
-  var PRIMERA_ESA = false;
+  var PRIMERA_ESA = false, AMB = 'basica';
+  try { AMB = localStorage.getItem('mp_amb') || 'basica'; } catch (e) { }
   function avisosLeidos() { try { return JSON.parse(localStorage.getItem('mp_leidos_' + TOKEN) || '[]'); } catch (e) { return []; } }
   function marcarLeidos(avisos) {
     try { localStorage.setItem('mp_leidos_' + TOKEN, JSON.stringify(avisos.map(function (a) { return a.id; }))); } catch (e) { }
