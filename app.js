@@ -65,7 +65,7 @@
     var esEsa = r.sistema === 'ESA';
     $('logo').classList.toggle('oculto', !esEsa);
     document.querySelectorAll('.school,.brand').forEach(function (x) { x.classList.toggle('oculto', esEsa); });
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 18</div>';
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 19</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
@@ -204,10 +204,11 @@
     if (dos) h += '<div class="tabs ambitos">' + lista.map(function (k) { return '<button data-amb="' + k + '" class="' + (AMB === k ? 'on' : '') + '">' + NOMAMB[k] + '</button>'; }).join('') + '</div>';
     if (avisos.length) h += '<button data-s="avi" class="btn-avisos' + (SEC === 'avi' ? ' on' : '') + '">Avisos' +
       (nuevos ? ' <span class="nuevos" id="avi-n">' + nuevos + (nuevos > 1 ? ' nuevos' : ' nuevo') + '</span>' : '') + '</button>';
+    var cr0 = cn.cronograma.filter(function (x) { return x.clases && x.clases.color; })[0], colSem = COLORES[(cr0 && cr0.clases.color) || ''] || COLORES.violeta;
     h += '<div class="secs">' +
       '<button data-s="cur" class="s-ses' + (SEC === 'cur' ? ' on' : '') + '">Curso</button>' +
-      '<button data-s="cro" class="s-acu' + (SEC === 'cro' ? ' on' : '') + '">Semestre</button>' +
       (verMod ? '<button data-s="mod" class="s-mod' + (SEC === 'mod' ? ' on' : '') + '">Módulos</button>' : '') +
+      '<button data-s="cro" class="s-cro' + (SEC === 'cro' ? ' on' : '') + '" style="--cc:' + colSem[0] + ';--cc-s:' + colSem[1] + ';--cc-t:' + colSem[2] + '">Semestre</button>' +
       (r.equipo ? '' : '<button data-s="pag" class="s-pag' + (SEC === 'pag' ? ' on' : '') + '">Pagos' + (deuda ? ' <span class="punto"></span>' : '') + '</button>') + '</div>';
     h += '<div class="panel p-ses' + (SEC === 'cur' ? '' : ' oculto') + '" id="p-cur">' +
       (cn.curso.length ? cn.curso.map(recuadro).join('') : '<div class="card"><div class="vacio">Pronto encontrarás aquí la información de tu curso.</div></div>') +
@@ -264,7 +265,13 @@
   }
   // ---------------------------------------------------------------- Módulos del Eje B
   var MOD_ABIERTO = {};
-  var MOD_BOTON = { B1: 'mb-agua', B3: 'mb-rojo' };
+  var MOD_BOTON = { B1: 'mb-b1', B2: 'mb-b2', B3: 'mb-b3', B4: 'mb-b4' };
+  function botonMod(card) {
+    var cod = card.modulo, ab = !!MOD_ABIERTO[cod], nombre = card.titulo.replace(/^\s*B\d\.?\s*/i, '');
+    return '<button class="mod-btn ' + (MOD_BOTON[cod] || 'mb-b1') + (ab ? ' abierto' : '') + '" data-mod="' + esc(cod) + '"><span>' + esc(cod + '. ' + nombre).toUpperCase() + '</span><span class="socio-x">▾</span></button>' +
+      '<div class="socio-cont' + (ab ? '' : ' oculto') + '" id="mod-' + esc(cod) + '" style="--mc:' + ({ B1: '#9fd5d1', B2: '#b39ddb', B3: '#eb636b', B4: '#ffbd59' }[cod] || '#9fd5d1') + '">';
+  }
+  function anios(v) { return (String(v || '').match(/\b(19|20)\d{2}\b/g) || []).filter(function (a, i, l) { return l.indexOf(a) === i; }); }
   function parrafos(t) { return t ? '<div class="terms">' + t.split(/\n+/).map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div>' : ''; }
   function estadoMod(card, tot) {
     var c = card.completado || '';
@@ -280,7 +287,7 @@
   }
   function modulo(card) {
     if (card.tipo === 'lecciones') return moduloLecciones(card);
-    var h = '<div class="card mod-card"><h2><span class="mod-cod">' + esc(card.modulo) + '</span> ' + esc(card.titulo.replace(/^\s*B\d\.?\s*/i, '')) + '</h2>' + parrafos(card.texto);
+    var h = botonMod(card) + '<div class="card mod-card">' + parrafos(card.texto);
     if (card.tipo === 'asistencia') {
       var f = card.fechas || {}, n = card.minimo || 4, apro = /^s[ií]/i.test(card.completado || '');
       if (card.puedeMarcar) {
@@ -293,15 +300,15 @@
       }
       h += estadoMod(card);
     } else {
-      var cub = /^cubierto/i.test(card.completado || '');
-      h += '<div class="mod-estado ' + (cub ? 'ok' : 'pend') + '">' + (cub ? '✓ Cubierto' : 'Pendiente') + '</div>';
+      var an = anios(card.completado);
+      h += '<div class="mod-estado ' + (an.length ? 'ok' : 'pend') + '">Asistencia: ' + (an.length ? esc(an.join(', ')) : 'pendiente') + '</div>';
+      if (an.length >= 2) h += '<div class="aviso ok" style="margin-top:8px">Módulo aprobado.</div>';
     }
-    return h + '</div>';
+    return h + '</div></div>';
   }
   function moduloLecciones(card) {
-    var cod = card.modulo, ab = !!MOD_ABIERTO[cod], nombre = card.titulo.replace(/^\s*B\d\.?\s*/i, '');
-    var h = '<button class="mod-btn ' + (MOD_BOTON[cod] || 'mb-agua') + (ab ? ' abierto' : '') + '" data-mod="' + esc(cod) + '"><span>' + esc(cod + '. ' + nombre).toUpperCase() + '</span><span class="socio-x">▾</span></button>';
-    h += '<div class="socio-cont' + (ab ? '' : ' oculto') + '" id="mod-' + esc(cod) + '"><div class="card">' + parrafos(card.texto);
+    var cod = card.modulo;
+    var h = botonMod(card) + '<div class="card">' + parrafos(card.texto);
     if (card.error || !card.clases) return h + '<div class="aviso warn">' + esc(card.error ? card.error : 'Las clases de este módulo estarán disponibles pronto.') + '</div></div></div>';
     var cl = (card.clases.clases || []).filter(function (c) { return !c.feriado; }), hechas = card.hechas || [], comp = /^s[ií]/i.test(card.completado || '');
     var idL = function (c) { return String(c.n || c.materia || '').trim().slice(0, 60); };

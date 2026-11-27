@@ -1,4 +1,4 @@
-const C='mispagos-v18';
+const C='mispagos-v19';
 // Recordatorios: el aviso llega por Firebase Cloud Messaging y este archivo lo muestra, aunque la app esté cerrada.
 self.addEventListener('push',e=>{
   let d={};try{d=e.data?e.data.json():{};}catch(x){d={notification:{body:e.data?e.data.text():''}};}

@@ -95,6 +95,7 @@
   .s-pag{background:#fbf3d0;color:#7a5f00} .s-pag.on{background:#e8c547;color:#3f3100}
   .s-acu{background:#ece4f6;color:#5b3c88} .s-acu.on{background:#6b4aa0;color:#fff}
   .s-mod{background:#dff1ef;color:#2c6b66} .s-mod.on{background:#3e8e88;color:#fff}
+  .s-cro{background:var(--cc-s);color:var(--cc-t)} .s-cro.on{background:var(--cc);color:#fff}
   .punto{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bad);vertical-align:middle;margin-left:4px}
   .panel{border-radius:18px;padding:10px;margin-bottom:12px}
   .p-ses{background:#eaf5ee} .p-pag{background:#fdf8e2} .p-acu{background:#f3eefa}
@@ -135,8 +136,8 @@
   .crono .card h2{color:var(--cc-t)} .crono .card{border-top:4px solid var(--cc)}
   .crono .lnk{background:var(--cc-s);color:var(--cc-t)}
   .mod-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;font-weight:900;font-size:21px;letter-spacing:.06em;text-align:center;
-    border-radius:14px;padding:18px 14px;margin:4px 0 12px;box-shadow:0 2px 6px rgba(0,0,0,.1);-webkit-text-stroke:1.2px #5a1d22;text-shadow:0 2px 0 #5a1d22}
-  .mb-agua{background:#9fd5d1;color:#eb636b} .mb-rojo{background:#eb636b;color:#ffbd59}
+    border-radius:14px;padding:18px 14px;margin:4px 0 12px;box-shadow:0 2px 6px rgba(0,0,0,.1);color:#1a1a1a}
+  .mb-b1{background:#9fd5d1} .mb-b2{background:#b39ddb} .mb-b3{background:#eb636b} .mb-b4{background:#ffbd59}
   .socio-x{font-size:18px;transition:transform .2s} .mod-btn.abierto .socio-x{transform:rotate(180deg)}
   .pensum{width:100%;border-radius:10px;display:block;margin-top:6px}
   .mod-card h2{display:flex;align-items:center;gap:8px} .mod-cod{background:#ffbd59;color:#5a1d22;border-radius:8px;padding:2px 8px;font-size:14px}
@@ -145,7 +146,7 @@
   .mod-fecha input{font:inherit;padding:8px;border:1px solid #cfd8d6;border-radius:8px;background:#fff}
   .mod-estado{display:inline-block;margin-top:10px;padding:6px 14px;border-radius:20px;font-weight:700}
   .mod-estado.ok{background:#e3f4e8;color:#1e6b3a} .mod-estado.pend{background:#fff3df;color:#8a5a00}
-  .socio-cont .card{border-left:4px solid #9fd5d1}
+  .socio-cont .card{border-left:4px solid var(--mc,#9fd5d1)}
   .socio-clase h3{margin:0 0 8px;font-size:16px} .socio-clase.hecha h3{color:var(--muted)}
   .socio-enl .lnk{background:#e3fbf3;color:#0f6b5c}
   .socio-ck{display:flex;align-items:center;gap:8px;margin-top:10px;font-weight:600}
@@ -174,8 +175,8 @@
 </main>
 <button id="instalar" class="btn oculto">Instalar app</button>
 <footer>Los pagos que registras quedan pendientes hasta que el Lic. Vernet los confirma.</footer>
-<script src="config.js?v=18"></script>
-<script src="app.js?v=18"></script>
+<script src="config.js?v=19"></script>
+<script src="app.js?v=19"></script>
 <a class="wa" id="wa" href="https://wa.me/5491167499410?text=Hola%20Oswaldo%2C%20te%20escribo%20por%3A%20" target="_blank" rel="noopener" aria-label="Escribir a Oswaldo por WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>WhatsApp</a>
 </body>
 </html>
