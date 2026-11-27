@@ -1,7 +1,7 @@
 {
- "name": "MisPagosVP",
- "short_name": "MisPagosVP",
- "description": "MisPagosVP — Escuela de Sociopsicodrama de las Américas · VernetO Psicodrama®",
+ "name": "VernetO",
+ "short_name": "VernetO",
+ "description": "VernetO — Escuela de Sociopsicodrama de las Américas · VernetO Psicodrama®",
  "lang": "es",
  "start_url": "./",
  "scope": "./",

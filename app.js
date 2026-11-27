@@ -62,7 +62,7 @@
   function pintar() {
     var r = DATA.roles[ROL];
     $('titulo').textContent = TITULO[r.sistema];
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">MisPagosVP · versión 6</div>';
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 7</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
@@ -263,7 +263,7 @@
           ESCUCHA = true;
           m.onMessage(function (p) {
             var n = (p && p.notification) || {};
-            reg.showNotification(n.title || 'MisPagosVP', { body: n.body || '', icon: 'icon-192.png', badge: 'icon-192.png' });
+            reg.showNotification(n.title || 'VernetO', { body: n.body || '', icon: 'icon-192.png', badge: 'icon-192.png' });
           });
         }
         return { reg: reg, m: m };
@@ -276,7 +276,7 @@
     msj('Enviando…');
     prepararMensajeria().then(function () { return llamar({ a: 'probar', t: TOKEN }); }).then(function (d) {
       if (!d.ok) throw new Error(d.error);
-      msj(esc(d.mensaje) + (d.enviados ? ' Si en unos segundos no aparece, revisa en los ajustes del celular que las notificaciones de MisPagosVP (o de Chrome) estén permitidas.' : ''), d.enviados ? 'ok' : 'warn');
+      msj(esc(d.mensaje) + (d.enviados ? ' Si en unos segundos no aparece, revisa en los ajustes del celular que las notificaciones de VernetO (o de Chrome) estén permitidas.' : ''), d.enviados ? 'ok' : 'warn');
     }).catch(function (er) { msj(esc(er.message || er), 'bad'); });
   }
   function activarAvisos() {
