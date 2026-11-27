@@ -65,7 +65,7 @@
     var esEsa = r.sistema === 'ESA';
     $('logo').classList.toggle('oculto', !esEsa);
     document.querySelectorAll('.school,.brand').forEach(function (x) { x.classList.toggle('oculto', esEsa); });
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 11</div>';
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 12</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
@@ -172,6 +172,7 @@
   function enlazarSecciones(r) {
     document.querySelectorAll('.secs button, .btn-avisos').forEach(function (b) { b.onclick = function () { mostrarSeccion(b.getAttribute('data-s')); window.scrollTo(0, 0); }; });
     if ($('ir-pagar')) $('ir-pagar').onclick = function () { mostrarSeccion('pag'); $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+    document.querySelectorAll('[data-irpagar]').forEach(function (b) { b.onclick = function () { mostrarSeccion('pag'); $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); }; });
     document.querySelectorAll('[data-pagar]').forEach(function (b) {
       b.onclick = function () {
         var cl = b.getAttribute('data-pagar');
@@ -219,7 +220,8 @@
       return '<div class="cuenta"><div style="min-width:0">' + (et ? '<span class="small muted">' + esc(et) + '</span><br>' : '') + '<span class="num">' + esc(val) + '</span></div>' +
         '<button class="copiar" data-copiar="' + esc(val) + '">Copiar</button></div>';
     }).join('');
-    if (c.enlace) h += '<a class="btn" style="display:block;text-align:center;text-decoration:none" href="' + esc(c.enlace) + '" target="_blank" rel="noopener">' + esc(c.boton || 'Abrir') + '</a>';
+    if (/^#pagar/.test(c.enlace || '')) h += '<button class="btn" data-irpagar="1" style="display:block;width:100%">' + esc(c.boton || 'Registrar un pago') + '</button>';
+    else if (c.enlace) h += '<a class="btn" style="display:block;text-align:center;text-decoration:none" href="' + esc(c.enlace) + '" target="_blank" rel="noopener">' + esc(c.boton || 'Abrir') + '</a>';
     else if (c.boton) h += '<div class="small muted" style="margin-top:10px">' + esc(c.boton) + ': enlace disponible pronto.</div>';
     return h + '</div>';
   }
