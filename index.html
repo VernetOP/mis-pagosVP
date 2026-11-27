@@ -19,7 +19,13 @@
     --ok:#2f7a55;--okbg:#e5f3ea;--bad:#b23a3a;--badbg:#fbe8e6;--warn:#8f5a0c;--warnbg:#fdf1dc;--grey:#eceae5}
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%}
-  body{min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+  body{min-height:100vh;padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+  .wa{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:50;display:flex;align-items:center;gap:7px;
+    background:#1f9d55;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:9px 14px 9px 11px;border-radius:999px;
+    box-shadow:0 3px 10px rgba(0,0,0,.18);opacity:.95}
+  .wa svg{width:19px;height:19px;flex:none}
+  .wa:active{transform:scale(.97)}
+
   header{padding:18px 18px 4px;text-align:center}
   .school{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
   .brand{font-family:Fraunces,serif;font-size:15px;color:var(--accent);margin-top:4px;font-weight:500}
@@ -144,7 +150,8 @@
 </main>
 <button id="instalar" class="btn oculto">Instalar app</button>
 <footer>Los pagos que registras quedan pendientes hasta que el Lic. Vernet los confirma.</footer>
-<script src="config.js?v=12"></script>
-<script src="app.js?v=12"></script>
+<script src="config.js?v=13"></script>
+<script src="app.js?v=13"></script>
+<a class="wa" id="wa" href="https://wa.me/5491167499410?text=Hola%20Oswaldo%2C%20te%20escribo%20por%3A%20" target="_blank" rel="noopener" aria-label="Escribir a Oswaldo por WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>WhatsApp</a>
 </body>
 </html>
