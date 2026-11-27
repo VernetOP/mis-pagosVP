@@ -65,7 +65,7 @@
     var esEsa = r.sistema === 'ESA';
     $('logo').classList.toggle('oculto', !esEsa);
     document.querySelectorAll('.school,.brand').forEach(function (x) { x.classList.toggle('oculto', esEsa); });
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 16</div>';
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 18</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
@@ -167,7 +167,7 @@
     SEC = sec;
     document.querySelectorAll('.secs button, .btn-avisos').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-s') === sec); });
     if (sec === 'avi' && DATA) { var rr = DATA.roles[ROL]; if (rr.contenidos) marcarLeidos(rr.contenidos.avisos || []); }
-    ['ses', 'pag', 'acu', 'cur', 'cro', 'avi'].forEach(function (k) { var p = $('p-' + k); if (p) p.classList.toggle('oculto', k !== sec); });
+    ['ses', 'pag', 'acu', 'cur', 'cro', 'mod', 'avi'].forEach(function (k) { var p = $('p-' + k); if (p) p.classList.toggle('oculto', k !== sec); });
   }
   function enlazarSecciones(r) {
     document.querySelectorAll('[data-amb]').forEach(function (b) { b.onclick = function () { AMB = b.getAttribute('data-amb'); try { localStorage.setItem('mp_amb', AMB); } catch (e) { } if (SEC === 'pag' || SEC === 'avi') SEC = 'cur'; pintar(); }; });
@@ -189,26 +189,30 @@
   function vistaEsa(r) {
     var cn0 = r.contenidos || {}, tiene = (cn0.estudiante && cn0.estudiante !== 'No') || (cn0.avanzado && cn0.avanzado !== 'No');
     // Formación básica y Avanzado: si la persona está en los dos, elige cuál ver; cada recuadro trae su ámbito
-    var amb = cn0.ambitos || {}, dos = amb.basica && amb.avanzado;
-    if (!dos) AMB = amb.avanzado ? 'avanzado' : 'basica';
+    var amb = cn0.ambitos || {}, lista = ['basica', 'avanzado'].filter(function (k) { return amb[k]; }), dos = lista.length > 1;
+    if (lista.indexOf(AMB) < 0) AMB = lista[0] || 'basica';
     var deAmb = function (x) { return !dos || !x.ambito || x.ambito === 'ambos' || x.ambito === AMB; };
     var cn = { curso: (cn0.curso || []).filter(deAmb), cronograma: (cn0.cronograma || []).filter(deAmb), avisos: cn0.avisos || [] };
+    var mods = cn0.modulos || [], verMod = mods.length && (AMB === 'basica' || !amb.basica);
     if (!tiene) return r.equipo ? '<div class="card"><div class="vacio">Todavía no hay contenidos asignados a tu acceso.</div></div>' : pagosEsa(r, true);
     var avisos = cn.avisos || [], leidos = avisosLeidos(), nuevos = avisos.filter(function (a) { return leidos.indexOf(a.id) < 0; }).length;
     if (!PRIMERA_ESA) { PRIMERA_ESA = true; if (nuevos) SEC = 'avi'; }
-    if (['cur', 'cro', 'pag', 'avi'].indexOf(SEC) < 0 || (SEC === 'avi' && !avisos.length) || (SEC === 'pag' && r.equipo)) SEC = 'cur';
+    if (['cur', 'cro', 'mod', 'pag', 'avi'].indexOf(SEC) < 0 || (SEC === 'avi' && !avisos.length) || (SEC === 'pag' && r.equipo) || (SEC === 'mod' && !verMod)) SEC = 'cur';
     var deuda = r.deudas.length || r.matricula > 0 || r.saldoAnterior > 0;
     var h = '';
-    if (dos) h += '<div class="tabs ambitos"><button data-amb="basica" class="' + (AMB === 'basica' ? 'on' : '') + '">Básica</button>' +
-      '<button data-amb="avanzado" class="' + (AMB === 'avanzado' ? 'on' : '') + '">Avanzada</button></div>';
+    var NOMAMB = { basica: 'Básica', avanzado: 'Avanzada' };
+    if (dos) h += '<div class="tabs ambitos">' + lista.map(function (k) { return '<button data-amb="' + k + '" class="' + (AMB === k ? 'on' : '') + '">' + NOMAMB[k] + '</button>'; }).join('') + '</div>';
     if (avisos.length) h += '<button data-s="avi" class="btn-avisos' + (SEC === 'avi' ? ' on' : '') + '">Avisos' +
       (nuevos ? ' <span class="nuevos" id="avi-n">' + nuevos + (nuevos > 1 ? ' nuevos' : ' nuevo') + '</span>' : '') + '</button>';
     h += '<div class="secs">' +
       '<button data-s="cur" class="s-ses' + (SEC === 'cur' ? ' on' : '') + '">Curso</button>' +
-      '<button data-s="cro" class="s-acu' + (SEC === 'cro' ? ' on' : '') + '">Cronograma</button>' +
+      '<button data-s="cro" class="s-acu' + (SEC === 'cro' ? ' on' : '') + '">Semestre</button>' +
+      (verMod ? '<button data-s="mod" class="s-mod' + (SEC === 'mod' ? ' on' : '') + '">Módulos</button>' : '') +
       (r.equipo ? '' : '<button data-s="pag" class="s-pag' + (SEC === 'pag' ? ' on' : '') + '">Pagos' + (deuda ? ' <span class="punto"></span>' : '') + '</button>') + '</div>';
     h += '<div class="panel p-ses' + (SEC === 'cur' ? '' : ' oculto') + '" id="p-cur">' +
-      (cn.curso.length ? cn.curso.map(recuadro).join('') : '<div class="card"><div class="vacio">Pronto encontrarás aquí la información de tu curso.</div></div>') + tarjetaAvisos(r) + '</div>';
+      (cn.curso.length ? cn.curso.map(recuadro).join('') : '<div class="card"><div class="vacio">Pronto encontrarás aquí la información de tu curso.</div></div>') +
+      tarjetaAvisos(r) + '</div>';
+    if (verMod) h += '<div class="panel p-mod' + (SEC === 'mod' ? '' : ' oculto') + '" id="p-mod">' + panelModulos(mods) + '</div>';
     h += '<div class="panel p-acu' + (SEC === 'cro' ? '' : ' oculto') + '" id="p-cro">' +
       (cn.cronograma.length ? cn.cronograma.map(function (c) { return c.clases || c.error ? cronograma(c) : recuadro(c); }).join('') : '<div class="card"><div class="vacio">El cronograma estará disponible pronto.</div></div>') + '</div>';
     if (avisos.length) h += '<div class="panel p-avi' + (SEC === 'avi' ? '' : ' oculto') + '" id="p-avi">' + avisos.map(function (a) {
@@ -252,7 +256,94 @@
     if (!(c.lecturas.length || c.material.length || c.cronica.length || c.video.length || (c.plan || []).length) && !c.feriado) h += '<div class="small muted">Todavía no hay materiales cargados para esta clase.</div>';
     return h;
   }
+  var COLORES = { verde: ['#2e7d4f', '#e6f2ea', '#23613d'], azul: ['#2563a8', '#e5eef9', '#1d4f87'], rojo: ['#c0392b', '#fbe9e7', '#9a2d22'],
+    violeta: ['#6b4aa0', '#f1ecf8', '#5b3c88'], naranja: ['#e07a1f', '#fdf0e4', '#a9590f'], amarillo: ['#c99a06', '#fbf3d6', '#8a6a04'] };
   function cronograma(card) {
+    var c3 = COLORES[(card.clases && card.clases.color) || ''] || COLORES.violeta;
+    return '<div class="crono" style="--cc:' + c3[0] + ';--cc-s:' + c3[1] + ';--cc-t:' + c3[2] + '">' + cronogramaFechas(card) + '</div>';
+  }
+  // ---------------------------------------------------------------- Módulos del Eje B
+  var MOD_ABIERTO = {};
+  var MOD_BOTON = { B1: 'mb-agua', B3: 'mb-rojo' };
+  function parrafos(t) { return t ? '<div class="terms">' + t.split(/\n+/).map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div>' : ''; }
+  function estadoMod(card, tot) {
+    var c = card.completado || '';
+    if (/^s[ií]/i.test(c)) return '<div class="aviso ok" style="margin-top:8px">Módulo aprobado y confirmado por la dirección.</div>';
+    if (/^revisar/i.test(c)) return '<div class="aviso warn" style="margin-top:8px">' + (card.tipo === 'asistencia' ? 'Anotaste todos los encuentros.' : 'Completaste todas las clases.') + ' La dirección revisará y confirmará el módulo.</div>';
+    return '';
+  }
+  function panelModulos(mods) {
+    var h = '<div class="card"><h2>Pensum ESA.VP 2026</h2><a href="pensum.jpg" target="_blank" rel="noopener"><img class="pensum" src="pensum.jpg" alt="Pensum ESA.VP 2026: ejes teóricos y ejes de formación"></a>' +
+      '<div class="small muted" style="margin-top:4px">Toca la imagen para verla completa.</div></div>';
+    mods.forEach(function (m) { h += m.modulo ? modulo(m) : recuadro(m); });
+    return h;
+  }
+  function modulo(card) {
+    if (card.tipo === 'lecciones') return moduloLecciones(card);
+    var h = '<div class="card mod-card"><h2><span class="mod-cod">' + esc(card.modulo) + '</span> ' + esc(card.titulo.replace(/^\s*B\d\.?\s*/i, '')) + '</h2>' + parrafos(card.texto);
+    if (card.tipo === 'asistencia') {
+      var f = card.fechas || {}, n = card.minimo || 4, apro = /^s[ií]/i.test(card.completado || '');
+      if (card.puedeMarcar) {
+        h += '<div class="mod-fechas">';
+        for (var k = 1; k <= n; k++) {
+          var v = f[k] || '', iso = /^\d{2}\/\d{2}\/\d{4}$/.test(v) ? v.slice(6) + '-' + v.slice(3, 5) + '-' + v.slice(0, 2) : '';
+          h += '<label class="mod-fecha"><span>Encuentro ' + k + '</span><input type="date" data-asis="' + k + '" value="' + iso + '"' + (apro ? ' disabled' : '') + '></label>';
+        }
+        h += '</div><div class="small"><b>' + Object.keys(f).length + ' de ' + n + '</b> encuentros anotados</div>';
+      }
+      h += estadoMod(card);
+    } else {
+      var cub = /^cubierto/i.test(card.completado || '');
+      h += '<div class="mod-estado ' + (cub ? 'ok' : 'pend') + '">' + (cub ? '✓ Cubierto' : 'Pendiente') + '</div>';
+    }
+    return h + '</div>';
+  }
+  function moduloLecciones(card) {
+    var cod = card.modulo, ab = !!MOD_ABIERTO[cod], nombre = card.titulo.replace(/^\s*B\d\.?\s*/i, '');
+    var h = '<button class="mod-btn ' + (MOD_BOTON[cod] || 'mb-agua') + (ab ? ' abierto' : '') + '" data-mod="' + esc(cod) + '"><span>' + esc(cod + '. ' + nombre).toUpperCase() + '</span><span class="socio-x">▾</span></button>';
+    h += '<div class="socio-cont' + (ab ? '' : ' oculto') + '" id="mod-' + esc(cod) + '"><div class="card">' + parrafos(card.texto);
+    if (card.error || !card.clases) return h + '<div class="aviso warn">' + esc(card.error ? card.error : 'Las clases de este módulo estarán disponibles pronto.') + '</div></div></div>';
+    var cl = (card.clases.clases || []).filter(function (c) { return !c.feriado; }), hechas = card.hechas || [], comp = /^s[ií]/i.test(card.completado || '');
+    var idL = function (c) { return String(c.n || c.materia || '').trim().slice(0, 60); };
+    var nh = cl.filter(function (c) { return comp || hechas.indexOf(idL(c)) >= 0; }).length;
+    if (card.puedeMarcar) h += '<div class="lec-prog"><div class="lec-bar"><span style="width:' + Math.round(100 * nh / Math.max(cl.length, 1)) + '%"></span></div><div class="small"><b>' + nh + ' de ' + cl.length + '</b> clases completadas</div></div>' + estadoMod(card);
+    h += '</div>';
+    h += cl.map(function (c) {
+      var id = idL(c), ok = comp || hechas.indexOf(id) >= 0;
+      var libros = (c.lecturas || []).concat(c.material || []), vids = c.video || [];
+      return '<div class="card socio-clase' + (ok ? ' hecha' : '') + '"><h3>' + esc(c.n && !/^\s*clase\b/i.test(c.materia || '') ? 'Clase ' + c.n + ' · ' : '') + esc(c.materia || '') + '</h3>' +
+        '<div class="socio-enl">' + libros.map(function (l) { return '<a class="lnk" href="' + esc(l.u) + '" target="_blank" rel="noopener">📖 ' + esc(l.t && !/^https?:/.test(l.t) ? l.t : 'Bibliografía') + '</a>'; }).join('') +
+        vids.map(function (l) { return '<a class="lnk" href="' + esc(l.u) + '" target="_blank" rel="noopener">▶ Ver video</a>'; }).join('') +
+        (!libros.length && !vids.length ? '<span class="small muted">Material disponible pronto.</span>' : '') + '</div>' +
+        (card.puedeMarcar ? '<label class="socio-ck"><input type="checkbox" data-lec="' + esc(id) + '" data-m="' + esc(cod) + '"' + (ok ? ' checked' : '') + (comp ? ' disabled' : '') + '> Completada</label>' : '') + '</div>';
+    }).join('');
+    return h + '</div>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-mod]'); if (!b) return;
+    var cod = b.getAttribute('data-mod'); MOD_ABIERTO[cod] = !MOD_ABIERTO[cod];
+    b.classList.toggle('abierto', MOD_ABIERTO[cod]); var c = $('mod-' + cod); if (c) c.classList.toggle('oculto', !MOD_ABIERTO[cod]);
+  });
+  function modDe(cod) { return ((DATA.roles[ROL].contenidos || {}).modulos || []).filter(function (x) { return x.modulo === cod; })[0]; }
+  document.addEventListener('change', function (e) {
+    var ck = e.target; if (!ck.matches || !ck.matches('input[data-lec]')) return;
+    var cod = ck.getAttribute('data-m') || 'B1'; ck.disabled = true;
+    enviar({ a: 'leccion', t: TOKEN, m: cod, n: ck.getAttribute('data-lec'), hecho: ck.checked }).then(function (d) {
+      if (!d.ok) throw new Error(d.error);
+      var cr = modDe(cod); if (cr) { cr.hechas = d.hechas; cr.completado = d.completado; }
+      pintar();
+    }).catch(function (err) { ck.checked = !ck.checked; ck.disabled = false; alert(err.message || 'No se pudo guardar.'); });
+  });
+  document.addEventListener('change', function (e) {
+    var inp = e.target; if (!inp.matches || !inp.matches('input[data-asis]')) return;
+    inp.disabled = true;
+    enviar({ a: 'asistencia', t: TOKEN, m: 'B2', k: inp.getAttribute('data-asis'), fecha: inp.value }).then(function (d) {
+      if (!d.ok) throw new Error(d.error);
+      var cr = modDe('B2'); if (cr) { cr.fechas = d.fechas; cr.completado = d.completado; }
+      pintar();
+    }).catch(function (err) { inp.disabled = false; alert(err.message || 'No se pudo guardar.'); });
+  });
+  function cronogramaFechas(card) {
     var h = '<div class="card"><h2>' + esc(card.titulo || 'Cronograma') + '</h2>';
     if (card.texto) h += '<div class="terms">' + card.texto.split(/\n+/).map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div>';
     if (card.error || !card.clases) return h + '<div class="aviso warn">' + esc(card.error || 'No se pudo leer el cronograma.') + '</div></div>';
