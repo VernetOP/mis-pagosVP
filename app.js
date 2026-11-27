@@ -65,7 +65,7 @@
     var esEsa = r.sistema === 'ESA';
     $('logo').classList.toggle('oculto', !esEsa);
     document.querySelectorAll('.school,.brand').forEach(function (x) { x.classList.toggle('oculto', esEsa); });
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 14</div>';
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 15</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
@@ -187,10 +187,10 @@
   // ---------- Estudiantes ESA.VP
   function vistaEsa(r) {
     var cn = r.contenidos || {}, tiene = (cn.estudiante && cn.estudiante !== 'No') || (cn.avanzado && cn.avanzado !== 'No');
-    if (!tiene) return pagosEsa(r, true);
+    if (!tiene) return r.equipo ? '<div class="card"><div class="vacio">Todavía no hay contenidos asignados a tu acceso.</div></div>' : pagosEsa(r, true);
     var avisos = cn.avisos || [], leidos = avisosLeidos(), nuevos = avisos.filter(function (a) { return leidos.indexOf(a.id) < 0; }).length;
     if (!PRIMERA_ESA) { PRIMERA_ESA = true; if (nuevos) SEC = 'avi'; }
-    if (['cur', 'cro', 'pag', 'avi'].indexOf(SEC) < 0 || (SEC === 'avi' && !avisos.length)) SEC = 'cur';
+    if (['cur', 'cro', 'pag', 'avi'].indexOf(SEC) < 0 || (SEC === 'avi' && !avisos.length) || (SEC === 'pag' && r.equipo)) SEC = 'cur';
     var deuda = r.deudas.length || r.matricula > 0 || r.saldoAnterior > 0;
     var h = '';
     if (avisos.length) h += '<button data-s="avi" class="btn-avisos' + (SEC === 'avi' ? ' on' : '') + '">Avisos' +
@@ -198,7 +198,7 @@
     h += '<div class="secs">' +
       '<button data-s="cur" class="s-ses' + (SEC === 'cur' ? ' on' : '') + '">Curso</button>' +
       '<button data-s="cro" class="s-acu' + (SEC === 'cro' ? ' on' : '') + '">Cronograma</button>' +
-      '<button data-s="pag" class="s-pag' + (SEC === 'pag' ? ' on' : '') + '">Pagos' + (deuda ? ' <span class="punto"></span>' : '') + '</button></div>';
+      (r.equipo ? '' : '<button data-s="pag" class="s-pag' + (SEC === 'pag' ? ' on' : '') + '">Pagos' + (deuda ? ' <span class="punto"></span>' : '') + '</button>') + '</div>';
     h += '<div class="panel p-ses' + (SEC === 'cur' ? '' : ' oculto') + '" id="p-cur">' +
       (cn.curso.length ? cn.curso.map(recuadro).join('') : '<div class="card"><div class="vacio">Pronto encontrarás aquí la información de tu curso.</div></div>') + tarjetaAvisos(r) + '</div>';
     h += '<div class="panel p-acu' + (SEC === 'cro' ? '' : ' oculto') + '" id="p-cro">' +
@@ -209,7 +209,7 @@
         (a.texto ? '<div class="terms">' + a.texto.split(/\n+/).map(function (p) { return '<p>' + enlazar(p) + '</p>'; }).join('') + '</div>' : '') + '</div>';
     }).join('') + '</div>';
     if (SEC === 'avi') marcarLeidos(avisos);
-    h += '<div class="panel p-pag' + (SEC === 'pag' ? '' : ' oculto') + '" id="p-pag">' + pagosEsa(r, false) + '</div>';
+    if (!r.equipo) h += '<div class="panel p-pag' + (SEC === 'pag' ? '' : ' oculto') + '" id="p-pag">' + pagosEsa(r, false) + '</div>';
     return h;
   }
   function recuadro(c) {
