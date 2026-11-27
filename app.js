@@ -62,7 +62,7 @@
   function pintar() {
     var r = DATA.roles[ROL];
     $('titulo').textContent = TITULO[r.sistema];
-    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 7</div>';
+    $('vista').innerHTML = (r.sistema === 'ESA' ? vistaEsa(r) : vistaSes(r)) + '<div class="small muted" style="text-align:center;margin:18px 0 6px">VernetO · versión 8</div>';
     enlazarFormulario(r);
     enlazarSecciones(r);
   }
@@ -301,7 +301,7 @@
   // ---------- partes comunes
   function camposComunes(r) {
     return '<div class="two"><div><label for="f-fecha">Fecha de la transferencia</label><input type="date" id="f-fecha" max="' + hoyISO() + '" value="' + hoyISO() + '"></div>' +
-      '<div><label for="f-medio">Medio de pago</label><select id="f-medio">' + r.medios.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('') + '</select></div></div>' +
+      '<div><label for="f-medio">Medio de pago</label><select id="f-medio">' + r.medios.filter(function (m) { return !/saldo a favor/i.test(m); }).concat(r.medios.filter(function (m) { return /saldo a favor/i.test(m); })).map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('') + '</select></div></div>' +
       '<label for="f-oper">N.º de operación</label><input id="f-oper" autocomplete="off" placeholder="Figura en el comprobante">' +
       '<label for="f-comp">Comprobante (foto o PDF)</label><input type="file" id="f-comp" accept="image/*,application/pdf">' +
       '<div class="small muted" id="f-comp-ayuda" style="margin-top:6px">Con el número de operación el comprobante es opcional, pero ayuda a confirmar más rápido. Sin número, es obligatorio.</div>' +
