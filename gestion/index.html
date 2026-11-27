@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VernetO Gestión</title>
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="VernetO Gestión">
+<style>
+  html,body{margin:0;height:100%;background:#000;color:#f2f2f2;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;box-sizing:border-box}
+  img{width:150px;height:150px;border-radius:28px}
+  h1{font-weight:700;font-size:26px;margin:18px 0 4px}
+  p{color:#a9a9a9;font-size:15px;max-width:360px;line-height:1.45;margin:6px 0}
+  .btn{display:inline-block;margin-top:18px;background:#f2f2f2;color:#000;text-decoration:none;font-weight:600;border:0;border-radius:12px;padding:13px 22px;font-size:16px;cursor:pointer}
+  .sec{background:transparent;color:#f2f2f2;border:1px solid #555;margin-top:10px}
+  .oculto{display:none}
+  small{color:#6f6f6f;margin-top:26px;font-size:12px}
+</style>
+</head>
+<body>
+<main>
+  <img src="icon-512.png" alt="">
+  <h1>VernetO Gestión</h1>
+  <p id="estado">Abriendo su panel…</p>
+  <a class="btn" id="abrir" href="#">Abrir el panel</a>
+  <button class="btn sec oculto" id="instalar">Instalar en este dispositivo</button>
+  <p id="ayuda" class="oculto">Para instalarla: en Chrome, menú ⋮ › «Instalar app» o «Agregar a la pantalla de inicio». En iPhone: Compartir › «Agregar a inicio».</p>
+  <small id="modo"></small>
+</main>
+<script>
+  // Panel de control (Apps Script). PRUEBA: copia de Control de Pacientes. En producción se cambia por la dirección del panel real.
+  var PANEL = 'https://script.google.com/a/macros/verneto.com.ar/s/AKfycbwwHl8moSF54ucAb5lNHo6qGSJ99QuOlS8j738vh0MW06sPsjfSajJr0uRespEHWap6/exec';
+  var PRUEBA = true;
+  document.getElementById('abrir').href = PANEL;
+  document.getElementById('modo').textContent = PRUEBA ? 'Versión de prueba · panel de las copias' : '';
+  var instalada = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  if (instalada) {
+    setTimeout(function () { location.href = PANEL; }, 350);
+  } else {
+    document.getElementById('estado').textContent = 'Instale esta app para tenerla con su ícono en el celular y en la PC.';
+    document.getElementById('ayuda').classList.remove('oculto');
+  }
+  var aviso = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); aviso = e;
+    var b = document.getElementById('instalar'); b.classList.remove('oculto');
+    b.onclick = function () { aviso.prompt(); aviso.userChoice.then(function () { b.classList.add('oculto'); }); };
+  });
+  window.addEventListener('pageshow', function (e) { if (e.persisted && instalada) document.getElementById('estado').textContent = 'Toque «Abrir el panel» para volver a entrar.'; });
+</script>
+</body>
+</html>
